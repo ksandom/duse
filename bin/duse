@@ -1,0 +1,45 @@
+#!/bin/bash
+# duse - A directory shim manager for managing an source and a read-only cache of data.
+
+
+
+
+function help # Show this help.
+{
+  echo "Valid commands are"
+  grep "^function" "$0" | grep -v '\(private_\)' | sed 's/^function *//g; s/ # /    /g; s/^/--/g'
+}
+
+
+
+##### Stuff for handling parameters.
+function private_showCommands
+{
+  grep "^function" "$0" | awk '{ print $2 }' | grep -v '\(private_\)'
+}
+
+function private_isValidCommand
+{
+  private_showCommands | grep -q "^$1$"
+  return "$?"
+}
+
+function private_getCommandFromArg
+{
+  if [ "${1::2}" == '--' ]; then
+    echo "${1:2}"
+  else
+    return 1
+  fi
+}
+
+if [ "$1" == '' ]; then
+  help
+else
+  if command="$(private_getCommandFromArg "$1")"; then
+    shift
+    "$command" "$@"
+  else
+    echo "$0: Command not found." >&2
+  fi
+fi
