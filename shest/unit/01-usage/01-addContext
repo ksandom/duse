@@ -1,0 +1,25 @@
+#!/bin/bash
+# Test --addContext.
+
+. "$SHEST_SCRIPT" "--doNothing"
+HOME=`pwd`
+expectedDuseHome="$HOME/.config/duse"
+
+result="$(./bin/duse --addContext shoots "A collection of photo/video shoots.")"
+exitCode=$?
+
+passCode=0
+failCode=1
+
+
+# NOTE that passCode, warnCode, and failCode are not set for you since they may be different depending on what you are testing. Therefore you should either set these values, or replace them with what is meaningful for you.
+if [ -d "$expectedDuseHome/contexts/shoots" ] && grep -q "A collection" "$expectedDuseHome/contexts/shoots"/description && [ "$exitCode" == "$passCode" ] ; then
+    pass "Great!"
+elif ! [ -e "$expectedDuseHome/contexts/shoots" ]  ; then
+    fail "Context file did not exist. Output: $result"
+elif ! [ -e "$expectedDuseHome/contexts/shoots"/description ]  ; then
+    fail "Description file did not exist. Output: $result"
+else
+    fail "Something else failed. Got value=\"$result\" and exit code=$exitCode."
+fi
+

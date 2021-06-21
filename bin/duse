@@ -1,8 +1,34 @@
 #!/bin/bash
 # duse - A directory shim manager for managing an source and a read-only cache of data.
 
+# Make sure we have $HOME set so that we can make assumptions based on it, and the unit tests can override it.
+if [ "$HOME" == '' ]; then
+  HOME=~
+fi
+duseHome="$HOME/.config/duse"
+contextHome="$duseHome/contexts/"
 
 
+# ./bin/duse --addContext shoots "A collection of photo/video shoots."
+function addContext # 00: Add a new context that will have sources and cache associated with it. Usage: addContext shortName "Description."
+{
+  contextName="$1"
+  contextDescription="$2"
+  contextPath="$contextHome/$contextName"
+  
+  if [ "$1" == '' ]; then
+    echo "Need a name and description." >&2
+    return 1
+  fi
+  
+  if [ -e "$contextPath" ]; then
+    echo "Context $contextName already exists." >&2
+    return 1
+  fi
+  
+  mkdir -pv "$contextPath"
+  echo "$contextDescription" | tee "$contextPath/description"
+}
 
 function help # Show this help.
 {
@@ -10,7 +36,25 @@ function help # Show this help.
   grep "^function" "$0" | grep -v '\(private_\)' | sed 's/^function *//g; s/ # /    /g; s/^/--/g'
 }
 
+function listContexts
+{
+  if [ ! -d "$contextHome" ]; then
+    echo "There don't appear to be any contexts yet." >&2
+    return 1
+  fi
+  
+  while read context; do
+    private_showContext "$context"
+  done < <(ls "$contextHome")
+}
 
+function private_showContext
+{
+  context="$1"
+  echo "$context: $(cat "$contextHome/$context/description")"
+}
+
+#function removeContext
 
 ##### Stuff for handling parameters.
 function private_showCommands
