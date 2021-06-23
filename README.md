@@ -8,7 +8,7 @@ This is particularly useful for video editing, while keeping the primary storage
 * Context: The type of contents that you want to manage. Eg photo shoots, or audio clips.
 * Source: The single source of truth for a given piece of content within a context.
 * ReadCache: The short term storage where contents will be stored while it's in use.
-* Workdir: The virtual location that you interact with.
+* Workspace: The virtual location that you interact with.
 
 Worked example:
 

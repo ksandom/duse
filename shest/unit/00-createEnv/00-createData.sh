@@ -4,13 +4,13 @@
 . "$SHEST_SCRIPT" "--doNothing"
 
 passCode=0
-mkdir -p data/{context1,context2}/{source,cache} pad/{context1,context2}
+mkdir -p data/{context1,context2} workspace/{context1,context2} cache
 exitCode1=$?
 
-echo 1 > data/context1/source/a
-echo 2 > data/context1/source/b
-echo 3 > data/context2/source/c
-echo 4 > data/context2/source/d
+echo 1 > data/context1/a
+echo 2 > data/context1/b
+echo 3 > data/context2/c
+echo 4 > data/context2/d
 
 exitCode2=$?
 

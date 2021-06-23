@@ -8,6 +8,8 @@ expectedDuseHome="$HOME/.config/duse"
 result="$(./bin/duse --addContext shoots "A collection of photo/video shoots.")"
 exitCode=$?
 
+./bin/duse --addContext toDelete "An extra context that we will delete in a moment."
+
 passCode=0
 failCode=1
 

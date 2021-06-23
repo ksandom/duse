@@ -6,7 +6,7 @@ if [ "$HOME" == '' ]; then
   HOME=~
 fi
 duseHome="$HOME/.config/duse"
-contextHome="$duseHome/contexts/"
+contextHome="$duseHome/contexts"
 
 
 # ./bin/duse --addContext shoots "A collection of photo/video shoots."
@@ -30,13 +30,7 @@ function addContext # 00: Add a new context that will have sources and cache ass
   echo "$contextDescription" | tee "$contextPath/description"
 }
 
-function help # Show this help.
-{
-  echo "Valid commands are"
-  grep "^function" "$0" | grep -v '\(private_\)' | sed 's/^function *//g; s/ # /    /g; s/^/--/g'
-}
-
-function listContexts
+function listContexts # List contexts and their associated data.
 {
   if [ ! -d "$contextHome" ]; then
     echo "There don't appear to be any contexts yet." >&2
@@ -46,6 +40,26 @@ function listContexts
   while read context; do
     private_showContext "$context"
   done < <(ls "$contextHome")
+}
+
+function deleteContext # Delete a context. --deleteContext contextName . Note that this will delete all duse references to the context, but will not check any cases where it might be used. If they exist, they will be orphaned and unmanaged. The context can be manually re-created, and the references will be usable again.
+{
+  contextName="$1"
+  contextPath="$contextHome/$contextName"
+  
+  if [ ! -e "$contextPath" ]; then
+    echo "Context \"$contextName\" not found." >&2
+    return 1
+  fi
+  
+  rm -Rfv "$contextPath"
+}
+
+
+function help # Show this help.
+{
+  echo "Valid commands are"
+  grep "^function" "$0" | grep -v '\(private_\)' | sed 's/^function *//g; s/ # /    /g; s/^/--/g'
 }
 
 function private_showContext
