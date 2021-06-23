@@ -1,21 +1,20 @@
 #!/bin/bash
-# Test --listContext.
+# Test --addSource.
 
 . "$SHEST_SCRIPT" "--doNothing"
 HOME=`pwd`
 expectedDuseHome="$HOME/.config/duse"
 
-result="$(./bin/duse --deleteContext "toDelete")"
+result="$(./bin/duse --deleteSource shoots data/context1)"
 exitCode=$?
 
 passCode=0
 failCode=1
 
-
 # NOTE that passCode, warnCode, and failCode are not set for you since they may be different depending on what you are testing. Therefore you should either set these values, or replace them with what is meaningful for you.
-if [ "$exitCode" == "$passCode" ] ; then
+if [ ! -e "$expectedDuseHome/contexts/shoots/sources/data_context1" ] && [ -e "$expectedDuseHome/contexts/shoots/sources/data_context2" ]&& [ "$exitCode" == "$passCode" ] ; then
     pass "Great!"
 else
-    fail "Something else failed. Got value=\"$result\" and exit code=$exitCode."
+    fail "Got exit code=$exitCode."
 fi
 

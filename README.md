@@ -38,3 +38,8 @@ duse --addCache shoots ~/localCache
 ### Using the example
 
 
+## Requirements
+
+* bash.
+* rsync.
+* [realpath](https://man7.org/linux/man-pages/man1/realpath.1.html).

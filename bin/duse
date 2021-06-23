@@ -30,16 +30,60 @@ function addContext # 00: Add a new context that will have sources and cache ass
   echo "$contextDescription" | tee "$contextPath/description"
 }
 
+function private_listContextThing
+{
+  contextName="$1"
+  thingName="$2"
+  thingDirName="$3"
+  thingPath="$contextHome/$context/$thingDirName"
+  
+  if [ -e "$thingPath" ]; then
+    echo "  $thingName:"
+    if [ "$(ls -1 "$thingPath" | wc -l)" -lt 1 ]; then
+      echo "    None anymore."
+      rmdir "$thingPath"
+    else
+      for thingItem in "$thingPath"/*; do
+        echo "    $(basename "$thingItem"): $(cat $thingItem)"
+      done
+    fi
+  else
+    echo "  $thingName: None yet."
+  fi
+}
+
+function private_showContext
+{
+  context="$1"
+  echo "$context: $(cat "$contextHome/$context/description")"
+  
+  private_listContextThing "$context" "Sources" "sources"
+  private_listContextThing "$context" "Cache" "cache"
+  private_listContextThing "$context" "Workspaces" "workspaces"
+}
+
 function listContexts # List contexts and their associated data.
 {
-  if [ ! -d "$contextHome" ]; then
-    echo "There don't appear to be any contexts yet." >&2
-    return 1
+  if [ -e "$contextHome" ]; then
+    while read context; do
+      private_showContext "$context"
+    done < <(ls "$contextHome")
+  else
+    echo "No contexts yet." >&2
+    exit 1
   fi
+}
+
+function private_contextExists
+{
+  local contextName="$1"
+  local contextPath="$contextHome/$contextName"
   
-  while read context; do
-    private_showContext "$context"
-  done < <(ls "$contextHome")
+  if [ ! -e "$contextPath" ]; then
+    return 1
+  else
+    return 0
+  fi
 }
 
 function deleteContext # Delete a context. --deleteContext contextName . Note that this will delete all duse references to the context, but will not check any cases where it might be used. If they exist, they will be orphaned and unmanaged. The context can be manually re-created, and the references will be usable again.
@@ -47,7 +91,7 @@ function deleteContext # Delete a context. --deleteContext contextName . Note th
   contextName="$1"
   contextPath="$contextHome/$contextName"
   
-  if [ ! -e "$contextPath" ]; then
+  if ! private_contextExists "$contextName"; then
     echo "Context \"$contextName\" not found." >&2
     return 1
   fi
@@ -56,19 +100,94 @@ function deleteContext # Delete a context. --deleteContext contextName . Note th
 }
 
 
+
+function private_sourceName
+{
+  local sourcePath="$1"
+  
+  echo "$sourcePath" | sed "s#\(/\| \)#_#g"
+}
+
+function private_sourceExists
+{
+  local contextName="$1"
+  local sourceVanillaPath="$2"
+  local sourcePath="$(private_sourcePath "$contextName" "$sourceVanillaPath")"
+  
+  if ! private_contextExists "$contextName"; then
+    echo "Context \"$contextName\" not found." >&2
+    return 1
+  fi
+  
+  if [ ! -e "$sourcePath" ]; then
+    return 1
+  else
+    return 0
+  fi
+}
+
+function private_sourcePath
+{
+  local contextName="$1"
+  local sourceVanillaPath="$2"
+  local sourcesPath="$contextHome/$contextName/sources"
+  local sourceName="$(private_sourceName "$sourceVanillaPath")"
+  
+  echo "$sourcesPath/$sourceName"
+}
+
+function addSource # Add a source to a context. --addsource contextName sourcePath
+{
+  contextName="$1"
+  contextPath="$contextHome/$contextName"
+  sourcesPath="$contextHome/$contextName/sources"
+  sourceVanillaPath="$2"
+  fullSourcePath="$(realpath "$2")"
+  sourcePath="$(private_sourcePath "$contextName" "$sourceVanillaPath")"
+  
+  if ! private_contextExists "$contextName"; then
+    echo "Context \"$contextName\" not found." >&2
+    return 1
+  fi
+  
+  if private_sourceExists "$contextName" "$sourceVanillaPath";  then
+    echo "Source \"$sourceVanillaPath\" already exists within context \"$contextName\"." >&2
+    return 1
+  fi
+  
+  mkdir -p "$sourcesPath"
+  echo "$fullSourcePath" > "$sourcePath"
+}
+
+function deleteSource # Delete a source from a context. --deleteSource contextName sourcePath
+{
+  contextName="$1"
+  contextPath="$contextHome/$contextName"
+  sourcesPath="$contextHome/$contextName/sources"
+  sourceVanillaPath="$2"
+  fullSourcePath="$(realpath "$2")"
+  sourcePath="$(private_sourcePath "$contextName" "$sourceVanillaPath")"
+  
+  if ! private_contextExists "$contextName"; then
+    echo "Context \"$contextName\" not found." >&2
+    return 1
+  fi
+  
+  if ! private_sourceExists "$contextName" "$sourceVanillaPath";  then
+    echo "Source \"$sourceVanillaPath\" does not exist within context \"$contextName\"." >&2
+    return 1
+  fi
+  
+  rm "$sourcePath"
+}
+
+
+
 function help # Show this help.
 {
   echo "Valid commands are"
   grep "^function" "$0" | grep -v '\(private_\)' | sed 's/^function *//g; s/ # /    /g; s/^/--/g'
 }
-
-function private_showContext
-{
-  context="$1"
-  echo "$context: $(cat "$contextHome/$context/description")"
-}
-
-#function removeContext
 
 ##### Stuff for handling parameters.
 function private_showCommands
