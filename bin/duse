@@ -181,6 +181,26 @@ function deleteSource # Delete a source from a context. --deleteSource contextNa
   rm "$sourcePath"
 }
 
+function setCache # Set the location where you want cache to be stored. --setCache contextName /path/to/cache/location
+{
+  contextName="$1"
+  contextPath="$contextHome/$contextName"
+  cachePath="$(realpath "$2")"
+  
+  if ! private_contextExists "$contextName"; then
+    echo "Context \"$contextName\" not found." >&2
+    return 1
+  fi
+  
+  if [ ! -e "$cachePath" ]; then
+    echo "The path \"$cachePath\" doesn't appear to exist." >&2
+    return 1
+  fi
+  
+  mkdir -p "$contextPath/cache"
+  echo "$cachePath" > "$contextPath/cache/location"
+}
+
 
 
 function help # Show this help.

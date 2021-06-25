@@ -32,7 +32,7 @@ duse --addSource shoots /mnt/oldShoots s2 "Archived photo-shoots."
 Let's specify where we want to cache the `shoots` context:
 
 ```bash
-duse --addCache shoots ~/localCache
+duse --setCache shoots ~/localCache
 ```
 
 ### Using the example
