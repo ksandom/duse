@@ -136,7 +136,7 @@ function private_sourcePath
   echo "$sourcesPath/$sourceName"
 }
 
-function addSource # Add a source to a context. --addsource contextName sourcePath
+function addSource # 01: Add a source to a context. --addsource contextName sourcePath
 {
   contextName="$1"
   contextPath="$contextHome/$contextName"
@@ -181,7 +181,7 @@ function deleteSource # Delete a source from a context. --deleteSource contextNa
   rm "$sourcePath"
 }
 
-function setCache # Set the location where you want cache to be stored. --setCache contextName /path/to/cache/location
+function setCache # 02: Set the location where you want cache to be stored. --setCache contextName /path/to/cache/location
 {
   contextName="$1"
   contextPath="$contextHome/$contextName"
