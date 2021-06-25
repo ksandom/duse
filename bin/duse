@@ -186,7 +186,8 @@ function deleteSource # Delete a source from a context. --deleteSource contextNa
 function help # Show this help.
 {
   echo "Valid commands are"
-  grep "^function" "$0" | grep -v '\(private_\)' | sed 's/^function *//g; s/ # /    /g; s/^/--/g'
+  echo
+  grep "^function" "$0" | grep -v '\(private_\)' | sed 's/^function *//g; s/ # /\^/g; s/^/--/g' | column -t -s '^'
 }
 
 ##### Stuff for handling parameters.
