@@ -8,14 +8,5 @@ expectedDuseHome="$HOME/.config/duse"
 result="$(./bin/duse --deleteContext "toDelete")"
 exitCode=$?
 
-passCode=0
-failCode=1
-
-
-# NOTE that passCode, warnCode, and failCode are not set for you since they may be different depending on what you are testing. Therefore you should either set these values, or replace them with what is meaningful for you.
-if [ "$exitCode" == "$passCode" ] ; then
-    pass "Great!"
-else
-    fail "Something else failed. Got value=\"$result\" and exit code=$exitCode."
-fi
-
+expect_exitCode 0
+expect_not_exists "$expectedDuseHome/contexts/toDelete"

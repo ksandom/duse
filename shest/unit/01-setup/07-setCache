@@ -8,13 +8,6 @@ expectedDuseHome="$HOME/.config/duse"
 result="$(./bin/duse --setCache shoots cache)"
 exitCode=$?
 
-passCode=0
-failCode=1
-
-# NOTE that passCode, warnCode, and failCode are not set for you since they may be different depending on what you are testing. Therefore you should either set these values, or replace them with what is meaningful for you.
-if [ -e "$expectedDuseHome/contexts/shoots/cache/location" ] && grep -q "cache" "$expectedDuseHome/contexts/shoots/cache/location" && [ "$exitCode" == "$passCode" ] ; then
-    pass "Great!"
-else
-    fail "Got exit code=$exitCode."
-fi
-
+expect_exitCode 0
+expect_exists "$expectedDuseHome/contexts/shoots/cache/location"
+expect_fileContains "$expectedDuseHome/contexts/shoots/cache/location" "cache"
