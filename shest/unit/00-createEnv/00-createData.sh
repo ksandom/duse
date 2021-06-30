@@ -4,7 +4,7 @@
 . "$SHEST_SCRIPT" "--doNothing"
 
 passCode=0
-mkdir -p data/{context1,context2} workspace/{context1,context2} cache
+mkdir -p data/{context1,context2} projects/example cache
 exitCode1=$?
 
 echo 1 > data/context1/a

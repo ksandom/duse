@@ -101,7 +101,7 @@ function deleteContext # Delete a context. --deleteContext contextName . Note th
 
 
 
-function private_sourceName
+function private_sourceName # Gives us a unique name based on a file path.
 {
   local sourcePath="$1"
   
@@ -201,6 +201,58 @@ function setCache # 02: Set the location where you want cache to be stored. --se
   echo "$cachePath" > "$contextPath/cache/location"
 }
 
+function private_registerWorkspace
+{
+  local contextName="$1"
+  local contextPath="$contextHome/$contextName"
+  local workspaceName="$2"
+  local workspacePath="`pwd`/$workspaceName"
+  local workspaceNiceName=$(private_sourceName "$workspacePath")
+  local action="${3:-register}"
+  
+  case "$action" in
+    "register")
+      mkdir -p "$contextPath/workspaces"
+      echo "$workspacePath" > "$contextPath/workspaces/$workspaceNiceName"
+    ;;
+    "unregister")
+      rm "$contextPath/workspaces/$workspaceNiceName"
+      if [ "$(ls "$contextPath/workspaces" | wc -l)" -lt 1 ]; then
+        rmdir "$contextPath/workspaces"
+      fi
+    ;;
+  esac
+}
+
+function createWorkspace # 03: Create a workspace that will use the context that you have created. --createWorkspace contextName workspaceName
+{
+  contextName="$1"
+  contextPath="$contextHome/$contextName"
+  workspaceName="$2"
+  
+  mkdir -p "$workspaceName/.duse"
+  echo "$contextName" > "$workspaceName/.duse/context"
+  
+  private_registerWorkspace "$contextName" "$workspaceName"
+}
+
+function deleteWorkspace # Delete a workspace. --createWorkspace workspaceNameOrPath
+{
+  workspaceNameOrPath="$1"
+  if [ ! -e "$workspaceNameOrPath/.duse" ]; then
+    echo "Could not find a valid workspace at \"$workspaceNameOrPath\"." >&2
+    return 1
+  fi
+  
+  contextName="$(cat "$workspaceNameOrPath/.duse/context")"
+  contextPath="$contextHome/$contextName"
+  
+  # TODO uncache everything in this workspace.
+  
+  private_registerWorkspace "$contextName" "$workspaceNameOrPath" 'unregister'
+  rm -Rvf "$workspaceNameOrPath"
+}
+
 
 
 function help # Show this help.
@@ -237,6 +289,7 @@ else
   if command="$(private_getCommandFromArg "$1")"; then
     shift
     "$command" "$@"
+    exit "$?"
   else
     echo "$0: Command not found." >&2
   fi

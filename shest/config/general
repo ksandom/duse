@@ -10,7 +10,7 @@ testLocation="/tmp/shest-$$"
 # testLocation=~/shest/shest-$$
 
 # Delete temporary files after the test finishes.
-deleteTmp=always
+deleteTmp=success
 # deleteTmp=success
 # deleteTmp=failure
 # deleteTmp=never
