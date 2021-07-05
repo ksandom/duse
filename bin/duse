@@ -253,7 +253,19 @@ function deleteWorkspace # Delete a workspace. --createWorkspace workspaceNameOr
   rm -Rvf "$workspaceNameOrPath"
 }
 
+function info # Show basic information about the current workspace.
+{
+  if [ ! -e '.duse/context' ]; then
+    echo "This does not appear to be a workspace." >&2
+    return 1
+  fi
+  
+  private_showContext "$(cat '.duse/context')"
+}
 
+
+
+################################################################################
 
 function help # Show this help.
 {
@@ -277,7 +289,12 @@ function private_isValidCommand
 function private_getCommandFromArg
 {
   if [ "${1::2}" == '--' ]; then
-    echo "${1:2}"
+    command="${1:2}"
+    if private_isValidCommand "$command"; then
+      echo "$command"
+    else
+      return 1
+    fi
   else
     return 1
   fi

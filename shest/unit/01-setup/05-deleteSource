@@ -11,3 +11,6 @@ exitCode=$?
 expect_exitCode 0
 expect_not_exists "$expectedDuseHome/contexts/shoots/sources/data_context1"
 expect_exists "$expectedDuseHome/contexts/shoots/sources/data_context2"
+
+# Re-add it so that we have it for future tests.
+./bin/duse --addSource shoots data/context1
