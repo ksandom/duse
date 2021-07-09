@@ -1,0 +1,18 @@
+#!/bin/bash
+# Write a decription of the test here.
+
+. "$SHEST_SCRIPT" "--doNothing"
+
+HOME=`pwd`
+expectedDuseHome="$HOME/.config/duse"
+workspaceHome="$HOME/projects/example/shoots"
+
+cd "$workspaceHome"
+result="$(~-/bin/duse --listAvailable)"
+exitCode=$?
+
+expect_exitCode 0
+expect_resultContains '^a$'
+expect_resultContains '^b$'
+expect_resultContains '^c$'
+expect_resultContains '^d$'

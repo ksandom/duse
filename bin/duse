@@ -126,6 +126,19 @@ function private_sourceExists
   fi
 }
 
+function private_getSources
+{
+  local contextName="$1"
+  local sourcesPath="$contextHome/$contextName/sources"
+  
+  if [ ! -e "$sourcesPath" ]; then
+    echo "It looks like the current context doesn't have any sources defined yet." >&2
+    return 1
+  fi
+  
+  ls -1 "$sourcesPath"
+}
+
 function private_sourcePath
 {
   local contextName="$1"
@@ -263,9 +276,106 @@ function info # Show basic information about the current workspace.
   private_showContext "$(cat '.duse/context')"
 }
 
+function private_getEntryType
+{
+  local context="$1"
+  local entry="$2"
+  
+  if [ -f "$entry" ]; then # Directly placed files are not managed by duse.
+    echo "Invalid file"
+    return 1
+  elif [ -d "$entry" ]; then # Directly placed directories are not managed by duse.
+    echo "Invalid directory"
+    return 1
+  else
+    # TODO Finish this.
+    false
+  fi
+}
+
+function list # List the items in the current workspace (current directory), and their state.
+{
+  if [ ! -e '.duse/context' ]; then
+    echo "This does not appear to be a workspace." >&2
+    return 1
+  fi
+  
+  context="$(cat '.duse/context')"
+  if stdoutIsTerminal; then
+    separator='^'
+  else
+    separator=','
+  fi
+  headings="Entry${separator}Accessible${separator}Type${separator}Location"
+  
+  {
+    # Compile together the output.
+    echo "$headings"
+    while read entry; do
+      entryType="$(private_getEntryType "$context" "$entry")"
+      
+      if [ "${entryType::7}" != 'Invalid' ]; then
+        entryAccessible="" # TODO
+        entryLocation="" # TODO
+      else
+        entryAccessible='Yes?'
+        entryLocation='Not managed by duse.'
+      fi
+      echo "$entry$separator$entryAccessible$separator$entryType$separator$entryLocation"
+    done < <(ls -1)
+  } | column -t -s '^'
+}
+
+function private_listAllPossibleCachableThings
+{
+  if [ ! -e '.duse/context' ]; then
+    echo "This does not appear to be a workspace." >&2
+    return 1
+  fi
+  
+  contextName="$(cat '.duse/context')"
+  sourcesPath="$contextHome/$contextName/sources"
+
+  
+  while read thing; do
+    ls -1 "$(cat $sourcesPath/$thing)"
+  done < <(private_getSources "$contextName")
+}
+
+function listAvailable # List out the things that you can cache in the current workspace (current directory).
+{
+  private_listAllPossibleCachableThings | sort -u
+}
 
 
 ################################################################################
+
+function isTerminal
+{
+  channel="$1"
+  
+  [ -t "$channel" ]
+  return "$?"
+}
+
+function stdinIsTerminal
+{
+  isTerminal 0
+  return "$?"
+}
+
+function stdoutIsTerminal
+{
+  isTerminal 1
+  return "$?"
+}
+
+function stderrIsTerminal
+{
+  isTerminal 2
+  return "$?"
+}
+
 
 function help # Show this help.
 {
@@ -309,5 +419,6 @@ else
     exit "$?"
   else
     echo "$0: Command not found." >&2
+    exit 1
   fi
 fi
