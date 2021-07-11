@@ -1,0 +1,26 @@
+#!/bin/bash
+# Create a test environment for manual experimentation. This should always be keep up-to-date with the unit tests, but there's no guarantee that it will be.
+
+. misc/env.sh
+set -ex
+
+mkdir -p /tmp/duseTestEnv
+
+# Create the data.
+./misc/createDuseTestData /tmp/duseTestEnv
+cd /tmp/duseTestEnv
+
+# Let's configure it.
+duse --addContext shoots "Photo shoots"
+duse --addSource shoots /tmp/duseTestEnv/source/source1
+duse --addSource shoots /tmp/duseTestEnv/source/source2
+duse --setCache shoots /tmp/duseTestEnv/cache
+
+cd projects/example
+duse --createWorkspace shoots workspace
+
+cd workspace
+duse --info
+duse --use 001
+duse --listAvailable
+duse --list

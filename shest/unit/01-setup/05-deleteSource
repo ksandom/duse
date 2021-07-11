@@ -5,12 +5,12 @@
 HOME=`pwd`
 expectedDuseHome="$HOME/.config/duse"
 
-result="$(./bin/duse --deleteSource shoots data/context1)"
+result="$(./bin/duse --deleteSource shoots source/source1)"
 exitCode=$?
 
 expect_exitCode 0
-expect_not_exists "$expectedDuseHome/contexts/shoots/sources/data_context1"
-expect_exists "$expectedDuseHome/contexts/shoots/sources/data_context2"
+expect_not_exists "$expectedDuseHome/contexts/shoots/sources/source_source1"
+expect_exists "$expectedDuseHome/contexts/shoots/sources/source_source2"
 
 # Re-add it so that we have it for future tests.
-./bin/duse --addSource shoots data/context1
+./bin/duse --addSource shoots source/source1

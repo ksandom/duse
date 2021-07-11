@@ -7,6 +7,11 @@ if [ "$HOME" == '' ]; then
 fi
 duseHome="$HOME/.config/duse"
 contextHome="$duseHome/contexts"
+warnExitCode=0
+
+if [ -e "$duseHome/overrides" ]; then
+  . "$duseHome/overrides"
+fi
 
 
 # ./bin/duse --addContext shoots "A collection of photo/video shoots."
@@ -162,6 +167,8 @@ function addSource # 01: Add a source to a context. --addsource contextName sour
     echo "Context \"$contextName\" not found." >&2
     return 1
   fi
+  
+  # TODO Test for the sourcePath existing on disk.
   
   if private_sourceExists "$contextName" "$sourceVanillaPath";  then
     echo "Source \"$sourceVanillaPath\" already exists within context \"$contextName\"." >&2
@@ -337,14 +344,75 @@ function private_listAllPossibleCachableThings
   sourcesPath="$contextHome/$contextName/sources"
 
   
-  while read thing; do
-    ls -1 "$(cat $sourcesPath/$thing)"
+  while read source; do
+    ls -1 "$(cat $sourcesPath/$source)"
   done < <(private_getSources "$contextName")
 }
 
 function listAvailable # List out the things that you can cache in the current workspace (current directory).
 {
   private_listAllPossibleCachableThings | sort -u
+}
+
+function private_getSourcesForThing
+{
+  local thing="$1"
+  
+  if [ ! -e '.duse/context' ]; then
+    echo "This does not appear to be a workspace." >&2
+    return 1
+  fi
+  
+  contextName="$(cat '.duse/context')"
+  sourcesPath="$contextHome/$contextName/sources"
+
+  
+  while read source; do
+    thingPath="$(cat $sourcesPath/$source)/$thing"
+    if [ -e "$thingPath" ]; then
+      echo "$thingPath"
+    fi
+  done < <(private_getSources "$contextName")
+}
+
+function private_getSourceForThing
+{
+  local thing="$1"
+  
+  if ! sources="$(private_getSourcesForThing "$thing")"; then
+    return 1
+  fi
+  
+  numberOfSources="$(echo "$sources" | wc -l)"
+  
+  if [ "$numberOfSources" -eq 0 ]; then
+    echo "There don't appear to be any sources for this item. Typo?" >&2
+    return 1
+  elif [ "$numberOfSources" -gt 1 ]; then
+    echo "There appear to be multiple sources for this item:" >&2
+    echo "$sources" | sed 's/^/  /g' >&2
+    echo -e "\nWill assume the first. But you should definitely fix this. You don't have a single source of truth." >&2
+    echo "$sources" | head -n 1
+    return "$warnExitCode"
+  else
+    echo "$sources"
+  fi
+}
+
+function private_doUseViaParameter
+{
+  thing="$1"
+  
+  if ! source="$(private_getSourceForThing "$thing")"; then
+    return 1
+  fi
+  
+  ln -s "$source" "$thing"
+}
+
+function use # Use an item, found in --listAvailable, in the current workspace.
+{
+  private_doUseViaParameter "$1"
 }
 
 

@@ -12,7 +12,9 @@ result="$(~-/bin/duse --listAvailable)"
 exitCode=$?
 
 expect_exitCode 0
-expect_resultContains '^a$'
-expect_resultContains '^b$'
-expect_resultContains '^c$'
-expect_resultContains '^d$'
+expect_resultContains '^001$'
+expect_resultContains '^002$'
+expect_resultContains '^003$'
+expect_resultContains '^004$'
+expect_resultContains '^005$'
+expect_resultContains '^006$'

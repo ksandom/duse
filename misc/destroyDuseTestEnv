@@ -1,0 +1,12 @@
+#!/bin/bash
+# Create a test environment for manual experimentation. This should always be keep up-to-date with the unit tests, but there's no guarantee that it will be.
+
+. misc/env.sh
+set -ex
+
+mkdir -p /tmp/duseTestEnv
+
+duse --deleteContext shoots
+
+# Destroy the data.
+rm -Rf /tmp/duseTestEnv

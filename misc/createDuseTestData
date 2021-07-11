@@ -1,0 +1,18 @@
+#!/bin/bash
+# Create test data for running unit tests and testing that stuff is working as expected.
+
+set -ex
+
+if [ "$1" != '' ]; then
+  mkdir -p "$1"
+  cd "$1"
+fi
+
+mkdir -p source/{source1/00{1,2,3},source2/00{4,5,6}} projects/example cache
+echo 1 > source/source1/001/a
+echo 2 > source/source1/002/b
+echo 3 > source/source1/003/c
+
+echo 4 > source/source2/004/d
+echo 5 > source/source2/005/e
+echo 6 > source/source2/006/f

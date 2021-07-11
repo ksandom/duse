@@ -13,5 +13,5 @@ exitCode=$?
 expect_exitCode 0
 expect_resultContains 'shoots'
 expect_resultContains 'A collection of photo/video shoots\.'
-expect_resultContains 'data/context1'
-expect_resultContains 'data/context2'
+expect_resultContains 'source/source1'
+expect_resultContains 'source/source2'

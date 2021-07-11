@@ -9,4 +9,4 @@ result="$(./bin/duse --listContexts)"
 exitCode=$?
 
 expect_exitCode 0
-expect_resultContains "data_context2"
+expect_resultContains "source_source2"
