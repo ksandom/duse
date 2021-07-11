@@ -1,0 +1,25 @@
+#!/bin/bash
+# Write a decription of the test here.
+
+. "$SHEST_SCRIPT" "--doNothing"
+
+HOME=`pwd`
+expectedDuseHome="$HOME/.config/duse"
+workspaceHome="$HOME/projects/example/shoots"
+
+cd "$workspaceHome"
+result="$(~-/bin/duse --list)"
+exitCode=$?
+
+expect_exitCode 0
+expect_resultLines 2
+expect_resultContains '^Entry'
+expect_resultContains 'Yes'
+expect_resultContains 'Uncached'
+expect_resultContains 'primaryShoots'
+
+# You can run /usr/bin/shest --listExpects to find commands that might be useful to you like
+# expect_exitCode 0
+# Or
+# expect_exists the_meaning_of_life.txt
+

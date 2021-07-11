@@ -12,15 +12,17 @@ cd /tmp/duseTestEnv
 
 # Let's configure it.
 duse --addContext shoots "Photo shoots"
-duse --addSource shoots /tmp/duseTestEnv/source/source1
-duse --addSource shoots /tmp/duseTestEnv/source/source2
+duse --addSource shoots /tmp/duseTestEnv/source/source1 primaryShoots
+duse --addSource shoots /tmp/duseTestEnv/source/source2 archiveShoots # We can have multiple sources, but we don't have to.
 duse --setCache shoots /tmp/duseTestEnv/cache
 
+# Create the workspace.
 cd projects/example
 duse --createWorkspace shoots workspace
 
+# And 
 cd workspace
 duse --info
-duse --use 001
 duse --listAvailable
+duse --use 001
 duse --list

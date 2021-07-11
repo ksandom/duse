@@ -149,19 +149,26 @@ function private_sourcePath
   local contextName="$1"
   local sourceVanillaPath="$2"
   local sourcesPath="$contextHome/$contextName/sources"
-  local sourceName="$(private_sourceName "$sourceVanillaPath")"
+  local sourceVanillaName="$3"
+  
+  if [ "$sourceVanillaName" == '' ]; then
+    local sourceName="$(private_sourceName "$sourceVanillaPath")"
+  else
+    local sourceName="$(private_sourceName "$sourceVanillaName")"
+  fi
   
   echo "$sourcesPath/$sourceName"
 }
 
-function addSource # 01: Add a source to a context. --addsource contextName sourcePath
+function addSource # 01: Add a source to a context. --addsource contextName sourcePath [sourceName]
 {
   contextName="$1"
   contextPath="$contextHome/$contextName"
   sourcesPath="$contextHome/$contextName/sources"
   sourceVanillaPath="$2"
   fullSourcePath="$(realpath "$2")"
-  sourcePath="$(private_sourcePath "$contextName" "$sourceVanillaPath")"
+  sourceName="$3"
+  sourcePath="$(private_sourcePath "$contextName" "$sourceVanillaPath" "$sourceName")"
   
   if ! private_contextExists "$contextName"; then
     echo "Context \"$contextName\" not found." >&2
@@ -218,7 +225,7 @@ function setCache # 02: Set the location where you want cache to be stored. --se
   fi
   
   mkdir -p "$contextPath/cache"
-  echo "$cachePath" > "$contextPath/cache/location"
+            echo "$cachePath" > "$contextPath/cache/location"
 }
 
 function private_registerWorkspace
@@ -283,20 +290,86 @@ function info # Show basic information about the current workspace.
   private_showContext "$(cat '.duse/context')"
 }
 
+function private_whichSource
+{
+  local contextName="$1"
+  local contextPath="$contextHome/$contextName"
+  local linkSource="$2"
+  
+  for source in "$contextPath/sources"/*; do
+    resolvedSource="$(cat "$source")"
+    if [ "$resolvedSource" == "$linkSource" ]; then
+      echo "$(basename "$source")"
+      return 0
+    fi
+  done
+  return 1
+}
+
 function private_getEntryType
 {
-  local context="$1"
+  local contextName="$1"
+  local contextPath="$contextHome/$contextName"
   local entry="$2"
+
+  linkSource="$(dirname "$(readlink "$entry")")"
   
-  if [ -f "$entry" ]; then # Directly placed files are not managed by duse.
+  
+  if [ -L "$entry" ]; then
+    if [ "$linkSource" == "$(cat "$contextPath/cache/location")" ]; then
+      echo "Cached"
+    elif sounds="$(private_whichSource "$contextName" "$linkSource")"; then
+      echo "Uncached"
+    else
+      echo "Invalid link"
+      return 1
+    fi
+  elif [ -f "$entry" ]; then # Directly placed files are not managed by duse.
     echo "Invalid file"
     return 1
   elif [ -d "$entry" ]; then # Directly placed directories are not managed by duse.
     echo "Invalid directory"
     return 1
+  fi
+}
+
+function private_entryInCache
+{
+  local context="$1"
+  local entry="$2"
+  
+  if [ -e "" ]; then
+    true
   else
-    # TODO Finish this.
-    false
+    return 1
+  fi
+}
+
+function private_entryInSource
+{
+  local context="$1"
+  local entry="$2"
+  
+  if sources="$(private_getSourcesForThing "$entry" 2>/dev/null)"; then
+    if [ "$(echo "$sources" | wc -l)" -gt 1 ]; then
+      echo "$sources"
+    fi
+  else
+    return 1
+  fi
+}
+
+function private_isAvailable
+{
+  local thing="$1"
+  local origin="$(readlink "$thing")"
+  
+  if [ -e "$origin" ]; then
+    echo "Yes"
+    return 0
+  else
+    echo "No"
+    return 1
   fi
 }
 
@@ -322,8 +395,8 @@ function list # List the items in the current workspace (current directory), and
       entryType="$(private_getEntryType "$context" "$entry")"
       
       if [ "${entryType::7}" != 'Invalid' ]; then
-        entryAccessible="" # TODO
-        entryLocation="" # TODO
+        entryAccessible="$(private_isAvailable "$entry")"
+        entryLocation="$(private_whichSource "$context" "$(dirname "$(readlink "$entry")")")"
       else
         entryAccessible='Yes?'
         entryLocation='Not managed by duse.'
