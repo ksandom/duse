@@ -17,9 +17,3 @@ expect_resultContains '^Entry'
 expect_resultContains 'Yes'
 expect_resultContains 'Uncached'
 expect_resultContains 'archiveShoots'
-
-# You can run /usr/bin/shest --listExpects to find commands that might be useful to you like
-# expect_exitCode 0
-# Or
-# expect_exists the_meaning_of_life.txt
-
