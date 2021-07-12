@@ -316,7 +316,7 @@ function private_getEntryType
   
   
   if [ -L "$entry" ]; then
-    if [ "$linkSource" == "$(cat "$contextPath/cache/location")" ]; then
+    if [ "$linkSource" == "$(cat "$contextPath/cache/location")/$contextName" ]; then
       echo "Cached"
     elif sounds="$(private_whichSource "$contextName" "$linkSource")"; then
       echo "Uncached"
@@ -476,6 +476,7 @@ function private_doUseViaParameter
 {
   thing="$1"
   
+  # TODO Make sure the item exists.
   if ! source="$(private_getSourceForThing "$thing")"; then
     return 1
   fi
@@ -483,10 +484,14 @@ function private_doUseViaParameter
   ln -s "$source" "$thing"
 }
 
-function use # Use an item, found in --listAvailable, in the current workspace.
+function use # Use an item (or piped items from --listAvailable), found in --listAvailable, in the current workspace. --use [itemToUse]
 {
   if stdinIsTerminal; then
-    private_doUseViaParameter "$1"
+    if [ "$1" != '' ]; then
+      private_doUseViaParameter "$1"
+    else
+      echo "Either specify an item, or pipe them from --listAvailable" >&2
+    fi
   else
     while read entry;do
       private_doUseViaParameter "$entry"
@@ -494,8 +499,71 @@ function use # Use an item, found in --listAvailable, in the current workspace.
   fi
 }
 
+function private_doCacheViaParameter
+{
+  local thing="$1"
+  
+  if [ ! -e '.duse/context' ]; then
+    echo "This does not appear to be a workspace." >&2
+    return 1
+  fi
+  
+  local contextName="$(cat '.duse/context')"
+  local workspaceName="$(private_sourceName "$(pwd)")"
+  local contextPath="$contextHome/$contextName"
+  local cacheDir="$(cat "$contextPath/cache/location")"
+  local source="$(private_getSourceForThing "$thing")"
+  local thingDir="$cacheDir/$contextName/$thing"
+  
+  echo "$(pwd)/$thing"
+  echo "Setup..." | indent
+  mkdir -p "$thingDir/.duse/usage"
+  echo "$source" > "$thingDir/.duse/source"
+  touch "$thingDir/.duse/usage/$workspaceName"
+  
+  private_syncDir "$thingDir" | indent
+  
+  echo "Set symlink... $thingDir" | indent
+  rm "$thing"
+  ln -s "$thingDir" "$thing"
+}
+
+function private_syncDir
+{
+  local cacheDir="$1"
+  local source="$(cat "$cacheDir/.duse/source")"
+  
+  echo "Sync $cacheDir..."
+  rsync -ruv "$source/"* "$cacheDir" | indent
+}
+
+function cache # Switch an item( or piped items from --listAvailable) to using cache. --cache itemToCache
+{
+  if stdinIsTerminal; then
+    if [ "$1" != '' ]; then
+      private_doCacheViaParameter "$1"
+    else
+      listAvailable | cache
+    fi
+  else
+    while read entry;do
+      private_doCacheViaParameter "$entry"
+    done
+  fi
+}
+
+# TODO uncache and update README
+# TODO sync
+# TODO Project wide versions of stuff.
 
 ################################################################################
+
+function indent
+{
+  indentString='  '
+  
+  sed "s/^/$indentString/g"
+}
 
 function isTerminal
 {

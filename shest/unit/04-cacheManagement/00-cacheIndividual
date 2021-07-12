@@ -1,0 +1,48 @@
+#!/bin/bash
+# Write a decription of the test here.
+
+. "$SHEST_SCRIPT" "--doNothing"
+
+HOME=`pwd`
+expectedDuseHome="$HOME/.config/duse"
+workspaceHome="$HOME/projects/example/shoots"
+workspaceName="$(echo "$workspaceHome" | sed "s#\(/\| \)#_#g")"
+
+cd "$workspaceHome"
+result="$(~-/bin/duse --cache 001)"
+exitCode=$?
+
+expect_exitCode 0
+expect_exists "$HOME/cache/shoots/001"
+expect_exists "$HOME/cache/shoots/001/.duse"
+expect_exists "$HOME/cache/shoots/001/.duse/usage"
+expect_exists "$HOME/cache/shoots/001/.duse/usage/$workspaceName"
+expect_exists "$HOME/cache/shoots/001/.duse/source"
+expect_exists "$HOME/cache/shoots/001/a"
+
+
+# Here is a list of expect_.* helper functions provided via /usr/bin/shest --listExpects :
+#
+# expect_exitCode expectedCode [message] [resultOverride]
+# expect_not_exitCode unexpectedCode [message] [resultOverride]
+# expect_value actualValue expectedValue [message] [resultOverride] [contextOverride]
+# expect_not_value actualValue unexpectedValue [message] [resultOverride] [contextOverride]
+# expect_exists fileOrDirectoryPath [message] [resultOverride]
+# expect_not_exists fileOrDirectoryPath [message] [resultOverride]
+# expect_fileContains fileOrDirectoryPath regexOrString [message] [resultOverride]
+# expect_not_fileContains fileOrDirectoryPath regexOrString [message] [resultOverride]
+# expect_resultContains regexOrString [message] [resultOverride]
+# expect_not_resultContains regexOrString [message] [resultOverride]
+# expect_resultLines numberOfLines [message] [resultOverride]
+# expect_not_resultLines numberOfLines [message] [resultOverride]
+# expect_condition conditionPart1 conditionPart2 conditionPart3 [message] [resultOverride] . Eg "$actualValue" -gt 2.    resolves to [ "$actualValue" "-gt" "2" ]
+# expect_not_condition conditionPart1 conditionPart2 conditionPart3 [message] [resultOverride] . Eg "$actualValue" -gt 2    resolves to [ ! "$actualValue" "-gt" "2" ]
+
+
+# expect_.* is preferred, but if you need more flexibility, you can also write more custom tests like this:
+#
+# if [ 1 -eq 1 ]; then
+#   pass Yay!
+# else
+#   fail "1 should definitely have equalled 1."
+# fi
