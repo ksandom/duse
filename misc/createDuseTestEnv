@@ -26,3 +26,6 @@ duse --info
 duse --listAvailable
 duse --use 001
 duse --list
+
+duse --listAvailable | duse --use
+duse --list

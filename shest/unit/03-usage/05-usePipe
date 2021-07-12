@@ -1,0 +1,20 @@
+#!/bin/bash
+# Write a decription of the test here.
+
+. "$SHEST_SCRIPT" "--doNothing"
+
+HOME=`pwd`
+expectedDuseHome="$HOME/.config/duse"
+workspaceHome="$HOME/projects/example/shoots"
+
+cd "$workspaceHome"
+result="$(~-/bin/duse --listAvailable | ~-/bin/duse --use)"
+exitCode=$?
+
+expect_exitCode 0
+expect_exists 001
+expect_exists 002
+expect_exists 003
+expect_exists 004
+expect_exists 005
+expect_exists 006

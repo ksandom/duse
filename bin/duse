@@ -485,7 +485,13 @@ function private_doUseViaParameter
 
 function use # Use an item, found in --listAvailable, in the current workspace.
 {
-  private_doUseViaParameter "$1"
+  if stdinIsTerminal; then
+    private_doUseViaParameter "$1"
+  else
+    while read entry;do
+      private_doUseViaParameter "$entry"
+    done
+  fi
 }
 
 

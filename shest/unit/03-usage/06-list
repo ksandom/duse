@@ -1,0 +1,20 @@
+#!/bin/bash
+# Write a decription of the test here.
+
+. "$SHEST_SCRIPT" "--doNothing"
+
+HOME=`pwd`
+expectedDuseHome="$HOME/.config/duse"
+workspaceHome="$HOME/projects/example/shoots"
+
+cd "$workspaceHome"
+result="$(~-/bin/duse --list)"
+exitCode=$?
+
+expect_exitCode 0
+expect_resultLines 7
+expect_resultContains '^Entry'
+expect_resultContains 'Yes'
+expect_resultContains 'Uncached'
+expect_resultContains '^001.*archiveShoots'
+expect_resultContains '^006.*primaryShoots'
