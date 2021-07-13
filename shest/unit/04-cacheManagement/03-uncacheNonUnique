@@ -1,0 +1,30 @@
+#!/bin/bash
+# Write a decription of the test here.
+
+. "$SHEST_SCRIPT" "--doNothing"
+
+HOME=`pwd`
+expectedDuseHome="$HOME/.config/duse"
+workspaceHome="$HOME/projects/example/shoots"
+
+cd "$HOME/projects/example/duplicate"
+result="$($HOME/bin/duse --uncache 001)"
+exitCode=$?
+expect_exitCode 0
+
+result="$($HOME/bin/duse --list)"
+exitCode=$?
+expect_exitCode 0
+expect_resultContains ^001.*Uncached
+
+# Stuff should still be in-place to serve the remaining workspace.
+expect_exists "$HOME/cache/shoots/001"
+expect_exists "$HOME/cache/shoots/001/.duse"
+expect_exists "$HOME/cache/shoots/001/.duse/usage"
+expect_exists "$HOME/cache/shoots/001/.duse/source"
+expect_exists "$HOME/cache/shoots/001/a"
+
+result="$(ls -1 "$HOME/cache/shoots/001/.duse/usage" | wc -l)"
+exitCode=$?
+expect_exitCode 0
+expect_value "$result" "1"

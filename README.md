@@ -91,13 +91,13 @@ duse --list
 
 Let's switch 002 back to the source.
 ```bash
-duse --source 002
+duse --uncache 002
 duse --list
 ```
 
 Right! We're done with this project, let's switch everything back to the source.
 ```bash
-duse --source
+duse --uncache
 ```
 
 #### Switching between the sources and the caches project wide
@@ -117,7 +117,7 @@ duse --cache
 ```
 
 ```bash
-duse --source
+duse --uncache
 ```
 
 #### Other workflow stuff

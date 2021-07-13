@@ -552,6 +552,89 @@ function cache # Switch an item( or piped items from --listAvailable) to using c
   fi
 }
 
+function private_cacheUsageForThing
+{
+  local contextName="$1"
+  local thing="$2"
+  local contextPath="$contextHome/$contextName"
+  local cacheDir="$(cat "$contextPath/cache/location")"
+  local thingDir="$cacheDir/$contextName/$thing"
+  
+  ls -1 "$thingDir/.duse/usage" 2>/dev/null | wc -l
+}
+
+function private_cleanCache
+{
+  local contextName="$1"
+  local thing="$2"
+  local cacheUsage="$(private_cacheUsageForThing "$contextName" "$thing")"
+  local contextPath="$contextHome/$contextName"
+  local cacheDir="$(cat "$contextPath/cache/location")"
+  local thingDir="$cacheDir/$contextName/$thing"
+  
+  if [ ! -e "$thingDir" ]; then
+    echo "private_cleanCache: cache for $thing does not exist. Will not clean." >&2
+  fi
+  
+  if [ "$cacheUsage" -eq 0 ]; then
+    rm -Rf "$thingDir"
+  else
+    echo "private_cleanCache: cache for $thing is not unused. Will not clean." >&2
+    return 1
+  fi
+}
+
+function private_doUncacheViaParameter
+{
+  local thing="$1"
+  local contextName="$(cat '.duse/context')"
+  local workspaceName="$(private_sourceName "$(pwd)")"
+  local contextPath="$contextHome/$contextName"
+  local cacheDir="$(cat "$contextPath/cache/location")"
+  local thingDir="$cacheDir/$contextName/$thing"
+  local originalSource="$(cat "$thingDir/.duse/source" 2>/dev/null)"
+  local derivedSource="$(private_getSourceForThing "$thing")"
+  
+  echo "$(pwd)/$thing"
+  
+  if [ "$originalSource" != "$derivedSource" ]; then
+    echo "WARN: The source appears to have changed. Updating:
+    Was: $originalSource
+    Now: $derivedSource" | indent >&2
+  fi
+  
+  echo "Set symlink... $derivedSource" | indent
+  rm "$thing"
+  ln -s "$derivedSource" "$thing"
+  
+  echo "Unregister from cache... $thingDir" | indent
+  rm -f "$thingDir/.duse/usage/$workspaceName"
+
+  local cacheUsage="$(private_cacheUsageForThing "$contextName" "$thing")"
+  if [ "$cacheUsage" -eq 0 ]; then
+    echo "Clean cache... $thingDir" | indent
+    private_cleanCache "$contextName" "$thing"
+  else
+    echo "No need to clean cache for $thingDir."
+  fi
+}
+
+function uncache # Switch an item( or piped items from --listAvailable) back to using cache. --uncache itemToUncache
+{
+  if stdinIsTerminal; then
+    if [ "$1" != '' ]; then
+      private_doUncacheViaParameter "$1"
+    else
+      listAvailable | uncache
+    fi
+  else
+    while read entry;do
+      private_doUncacheViaParameter "$entry"
+    done
+  fi
+}
+
+
 # TODO uncache and update README
 # TODO sync
 # TODO Project wide versions of stuff.

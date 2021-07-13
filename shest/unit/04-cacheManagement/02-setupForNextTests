@@ -1,0 +1,34 @@
+#!/bin/bash
+# Write a decription of the test here.
+
+. "$SHEST_SCRIPT" "--doNothing"
+
+HOME=`pwd`
+expectedDuseHome="$HOME/.config/duse"
+workspaceHome="$HOME/projects/example/shoots"
+
+cd "$HOME/projects/example"
+result="$($HOME/bin/duse --createWorkspace shoots duplicate)"
+exitCode=$?
+expect_exitCode 0
+
+cd duplicate
+result="$($HOME/bin/duse --use 001)"
+exitCode=$?
+expect_exitCode 0
+
+result="$($HOME/bin/duse --cache 001)"
+exitCode=$?
+expect_exitCode 0
+
+result="$($HOME/bin/duse --list)"
+exitCode=$?
+expect_exitCode 0
+
+expect_resultContains ^001.*Cached
+
+result="$(ls -1 "$HOME/cache/shoots/001/.duse/usage" | wc -l)"
+exitCode=$?
+expect_exitCode 0
+expect_value "$result" "2"
+
