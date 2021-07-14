@@ -381,7 +381,7 @@ function list # List the items in the current workspace (current directory), and
   fi
   
   context="$(cat '.duse/context')"
-  if stdoutIsTerminal; then
+  if private_stdoutIsTerminal; then
     separator='^'
   else
     separator=','
@@ -486,7 +486,7 @@ function private_doUseViaParameter
 
 function use # Use an item (or piped items from --listAvailable), found in --listAvailable, in the current workspace. --use [itemToUse]
 {
-  if stdinIsTerminal; then
+  if private_stdinIsTerminal; then
     if [ "$1" != '' ]; then
       private_doUseViaParameter "$1"
     else
@@ -516,14 +516,14 @@ function private_doCacheViaParameter
   local thingDir="$cacheDir/$contextName/$thing"
   
   echo "$(pwd)/$thing"
-  echo "Setup..." | indent
+  echo "Setup..." | private_indent
   mkdir -p "$thingDir/.duse/usage"
   echo "$source" > "$thingDir/.duse/source"
-  touch "$thingDir/.duse/usage/$workspaceName"
+  echo "$(pwd)/$thing" > "$thingDir/.duse/usage/$workspaceName"
   
-  private_syncDir "$thingDir" | indent
+  private_syncDir "$thingDir" | private_indent
   
-  echo "Set symlink... $thingDir" | indent
+  echo "Set symlink... $thingDir" | private_indent
   rm "$thing"
   ln -s "$thingDir" "$thing"
 }
@@ -534,12 +534,12 @@ function private_syncDir
   local source="$(cat "$cacheDir/.duse/source")"
   
   echo "Sync $cacheDir..."
-  rsync -ruv "$source/"* "$cacheDir" | indent
+  rsync -ruv "$source/"* "$cacheDir" | private_indent
 }
 
 function cache # Switch an item( or piped items from --listAvailable) to using cache. --cache itemToCache
 {
-  if stdinIsTerminal; then
+  if private_stdinIsTerminal; then
     if [ "$1" != '' ]; then
       private_doCacheViaParameter "$1"
     else
@@ -563,7 +563,7 @@ function private_cacheUsageForThing
   ls -1 "$thingDir/.duse/usage" 2>/dev/null | wc -l
 }
 
-function private_cleanCache
+function private_removeFromCache
 {
   local contextName="$1"
   local thing="$2"
@@ -573,13 +573,13 @@ function private_cleanCache
   local thingDir="$cacheDir/$contextName/$thing"
   
   if [ ! -e "$thingDir" ]; then
-    echo "private_cleanCache: cache for $thing does not exist. Will not clean." >&2
+    echo "private_removeFromCache: cache for $thing does not exist. Will not clean." >&2
   fi
   
   if [ "$cacheUsage" -eq 0 ]; then
     rm -Rf "$thingDir"
   else
-    echo "private_cleanCache: cache for $thing is not unused. Will not clean." >&2
+    echo "private_removeFromCache: cache for $thing is not unused. Will not clean." >&2
     return 1
   fi
 }
@@ -600,20 +600,20 @@ function private_doUncacheViaParameter
   if [ "$originalSource" != "$derivedSource" ]; then
     echo "WARN: The source appears to have changed. Updating:
     Was: $originalSource
-    Now: $derivedSource" | indent >&2
+    Now: $derivedSource" | private_indent >&2
   fi
   
-  echo "Set symlink... $derivedSource" | indent
+  echo "Set symlink... $derivedSource" | private_indent
   rm "$thing"
   ln -s "$derivedSource" "$thing"
   
-  echo "Unregister from cache... $thingDir" | indent
+  echo "Unregister from cache... $thingDir" | private_indent
   rm -f "$thingDir/.duse/usage/$workspaceName"
 
   local cacheUsage="$(private_cacheUsageForThing "$contextName" "$thing")"
   if [ "$cacheUsage" -eq 0 ]; then
-    echo "Clean cache... $thingDir" | indent
-    private_cleanCache "$contextName" "$thing"
+    echo "Clean cache... $thingDir" | private_indent
+    private_removeFromCache "$contextName" "$thing"
   else
     echo "No need to clean cache for $thingDir."
   fi
@@ -621,7 +621,7 @@ function private_doUncacheViaParameter
 
 function uncache # Switch an item( or piped items from --listAvailable) back to using cache. --uncache itemToUncache
 {
-  if stdinIsTerminal; then
+  if private_stdinIsTerminal; then
     if [ "$1" != '' ]; then
       private_doUncacheViaParameter "$1"
     else
@@ -641,14 +641,14 @@ function uncache # Switch an item( or piped items from --listAvailable) back to 
 
 ################################################################################
 
-function indent
+function private_indent
 {
   indentString='  '
   
   sed "s/^/$indentString/g"
 }
 
-function isTerminal
+function private_isTerminal
 {
   channel="$1"
   
@@ -656,21 +656,21 @@ function isTerminal
   return "$?"
 }
 
-function stdinIsTerminal
+function private_stdinIsTerminal
 {
-  isTerminal 0
+  private_isTerminal 0
   return "$?"
 }
 
-function stdoutIsTerminal
+function private_stdoutIsTerminal
 {
-  isTerminal 1
+  private_isTerminal 1
   return "$?"
 }
 
-function stderrIsTerminal
+function private_stderrIsTerminal
 {
-  isTerminal 2
+  private_isTerminal 2
   return "$?"
 }
 
