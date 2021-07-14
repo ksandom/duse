@@ -67,12 +67,17 @@ function private_showContext
   private_listContextThing "$context" "Workspaces" "workspaces"
 }
 
+function private_getContexts
+{
+  ls -1 "$contextHome"
+}
+
 function listContexts # List contexts and their associated data.
 {
   if [ -e "$contextHome" ]; then
     while read context; do
       private_showContext "$context"
-    done < <(ls "$contextHome")
+    done < <(private_getContexts)
   else
     echo "No contexts yet." >&2
     exit 1
@@ -228,6 +233,14 @@ function setCache # 02: Set the location where you want cache to be stored. --se
             echo "$cachePath" > "$contextPath/cache/location"
 }
 
+function private_getCache
+{
+  contextName="$1"
+  contextPath="$contextHome/$contextName"
+  
+  cat "$contextPath/cache/location"
+}
+
 function private_registerWorkspace
 {
   local contextName="$1"
@@ -316,7 +329,7 @@ function private_getEntryType
   
   
   if [ -L "$entry" ]; then
-    if [ "$linkSource" == "$(cat "$contextPath/cache/location")/$contextName" ]; then
+    if [ "$linkSource" == "$(private_getCache "$contextName")/$contextName" ]; then
       echo "Cached"
     elif sounds="$(private_whichSource "$contextName" "$linkSource")"; then
       echo "Uncached"
@@ -510,8 +523,7 @@ function private_doCacheViaParameter
   
   local contextName="$(cat '.duse/context')"
   local workspaceName="$(private_sourceName "$(pwd)")"
-  local contextPath="$contextHome/$contextName"
-  local cacheDir="$(cat "$contextPath/cache/location")"
+  local cacheDir="$(private_getCache "$contextName")"
   local source="$(private_getSourceForThing "$thing")"
   local thingDir="$cacheDir/$contextName/$thing"
   
@@ -556,9 +568,15 @@ function private_cacheUsageForThing
 {
   local contextName="$1"
   local thing="$2"
-  local contextPath="$contextHome/$contextName"
-  local cacheDir="$(cat "$contextPath/cache/location")"
+  local cacheDir="$(private_getCache "$contextName")"
   local thingDir="$cacheDir/$contextName/$thing"
+  
+  private_cacheUsage "$thingDir"
+}
+
+function private_cacheUsage
+{
+  local thingDir="$1"
   
   ls -1 "$thingDir/.duse/usage" 2>/dev/null | wc -l
 }
@@ -568,8 +586,7 @@ function private_removeFromCache
   local contextName="$1"
   local thing="$2"
   local cacheUsage="$(private_cacheUsageForThing "$contextName" "$thing")"
-  local contextPath="$contextHome/$contextName"
-  local cacheDir="$(cat "$contextPath/cache/location")"
+  local cacheDir="$(private_getCache "$contextName")"
   local thingDir="$cacheDir/$contextName/$thing"
   
   if [ ! -e "$thingDir" ]; then
@@ -589,8 +606,7 @@ function private_doUncacheViaParameter
   local thing="$1"
   local contextName="$(cat '.duse/context')"
   local workspaceName="$(private_sourceName "$(pwd)")"
-  local contextPath="$contextHome/$contextName"
-  local cacheDir="$(cat "$contextPath/cache/location")"
+  local cacheDir="$(private_getCache "$contextName")"
   local thingDir="$cacheDir/$contextName/$thing"
   local originalSource="$(cat "$thingDir/.duse/source" 2>/dev/null)"
   local derivedSource="$(private_getSourceForThing "$thing")"
@@ -634,9 +650,39 @@ function uncache # Switch an item( or piped items from --listAvailable) back to 
   fi
 }
 
+function private_checkUsage
+{
+  cacheEntryDir="$1"
+  while read workspaceName in; do
+    workspaceDescriptor="$cacheEntryDir/.duse/usage/$workspaceName"
+    if [ ! -e  "$(cat "$workspaceDescriptor")" ]; then
+      rm "$workspaceDescriptor"
+    fi
+  done < <(ls -1 "$cacheEntryDir/.duse/usage")
+}
 
-# TODO uncache and update README
-# TODO sync
+function sync # Sync cache to make sure it is up-to-date. Also remove orphaned entries.
+{
+  while read contextName; do
+    contextCache="$(private_getCache "$contextName")/$contextName"
+    cd "$contextCache"
+    while read cacheEntry; do
+      private_checkUsage "$cacheEntry"
+      cacheUsage="$(private_cacheUsage "$cacheEntry")"
+      
+      if [ "$cacheUsage" -gt 0 ]; then
+        private_syncDir "$cacheEntry"
+      else
+        echo "Removing $cacheEntry..."
+        rm -Rf "$cacheEntry"
+      fi
+      
+    done < <(ls -1)
+  done < <(private_getContexts)
+}
+
+# TODO un-createContext (what to cleanup on delete.)
+# TODO un-createWorkspace (what to cleanup on delete.)
 # TODO Project wide versions of stuff.
 
 ################################################################################

@@ -1,0 +1,26 @@
+#!/bin/bash
+# Test that --sync successfully brings in changes, and removes cache that is no longer needed.
+
+. "$SHEST_SCRIPT" "--doNothing"
+
+HOME=`pwd`
+
+expectedDuseHome="$HOME/.config/duse"
+workspaceHome="$HOME/projects/example/shoots"
+
+cd "$workspaceHome"
+$HOME/bin/duse --cache 002
+$HOME/bin/duse --cache 003
+
+echo blah > "$HOME/source/source1/003/z"
+rm $HOME/projects/example/shoots/002
+
+expect_exists "$HOME/cache/shoots/002"
+expect_not_exists "$HOME/cache/shoots/003/z"
+
+result="$($HOME/bin/duse --sync)"
+exitCode=$?
+expect_exitCode 0
+
+expect_exists "$HOME/cache/shoots/003/z"
+expect_not_exists "$HOME/cache/shoots/002"
