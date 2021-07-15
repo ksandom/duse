@@ -1,0 +1,25 @@
+#!/bin/bash
+# Test --deleteWorkspace
+
+. "$SHEST_SCRIPT" "--doNothing"
+
+HOME=`pwd`
+
+expectedDuseHome="$HOME/.config/duse"
+workspaceHome="$HOME/projects/example/shoots"
+
+cd "$workspaceHome"
+cd ..
+
+result="$($HOME/bin/duse --deleteWorkspace shoots)"
+exitCode=$?
+expect_exitCode 0
+
+expect_not_exists "$HOME/cache/shoots/001"
+expect_not_exists "$HOME/cache/shoots/002"
+expect_not_exists "$HOME/cache/shoots/003"
+expect_not_exists "$HOME/cache/shoots/004"
+expect_not_exists "$HOME/cache/shoots/005"
+expect_not_exists "$HOME/cache/shoots/006"
+
+expect_not_exists shoots

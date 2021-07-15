@@ -1,26 +1,26 @@
 #!/bin/bash
-# Test that --sync successfully brings in changes, and removes cache that is no longer needed.
+# Write a decription of the test here.
 
 . "$SHEST_SCRIPT" "--doNothing"
 
 HOME=`pwd`
-
 expectedDuseHome="$HOME/.config/duse"
 workspaceHome="$HOME/projects/example/shoots"
 
-cd "$workspaceHome"
-$HOME/bin/duse --cache 002
-$HOME/bin/duse --cache 003
-
-echo blah > "$HOME/source/source1/003/z"
-rm $HOME/projects/example/shoots/002
-
-expect_exists "$HOME/cache/shoots/002"
-expect_not_exists "$HOME/cache/shoots/003/z"
-
-result="$($HOME/bin/duse --sync)"
+cd "$HOME/projects/example/shoots"
+result="$($HOME/bin/duse --uncache 001)"
 exitCode=$?
 expect_exitCode 0
 
-expect_exists "$HOME/cache/shoots/003/z"
-expect_not_exists "$HOME/cache/shoots/002"
+result="$($HOME/bin/duse --list)"
+exitCode=$?
+expect_exitCode 0
+expect_resultContains ^001.*Uncached
+
+# Stuff should still be in-place to serve the remaining workspace.
+expect_not_exists "$HOME/cache/shoots/001"
+expect_not_exists "$HOME/cache/shoots/001/.duse"
+expect_not_exists "$HOME/cache/shoots/001/.duse/usage"
+expect_not_exists "$HOME/cache/shoots/001/.duse/source"
+expect_not_exists "$HOME/cache/shoots/001/a"
+

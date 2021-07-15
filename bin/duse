@@ -276,6 +276,19 @@ function createWorkspace # 03: Create a workspace that will use the context that
   private_registerWorkspace "$contextName" "$workspaceName"
 }
 
+function private_emptyWorkspace
+{
+  local workspacePath="$1"
+  
+  cd "$workspacePath"
+  
+  while read thing;do
+    unuse "$thing"
+  done < <(ls -1)
+  
+  cd ..
+}
+
 function deleteWorkspace # Delete a workspace. --createWorkspace workspaceNameOrPath
 {
   workspaceNameOrPath="$1"
@@ -288,6 +301,8 @@ function deleteWorkspace # Delete a workspace. --createWorkspace workspaceNameOr
   contextPath="$contextHome/$contextName"
   
   # TODO uncache everything in this workspace.
+  
+  private_emptyWorkspace "$workspaceNameOrPath"
   
   private_registerWorkspace "$contextName" "$workspaceNameOrPath" 'unregister'
   rm -Rvf "$workspaceNameOrPath"
@@ -494,6 +509,7 @@ function private_doUseViaParameter
     return 1
   fi
   
+  rm -f "$thing"
   ln -s "$source" "$thing"
 }
 
@@ -508,6 +524,29 @@ function use # Use an item (or piped items from --listAvailable), found in --lis
   else
     while read entry;do
       private_doUseViaParameter "$entry"
+    done
+  fi
+}
+
+function private_doUnUseViaParameter
+{
+  thing="$1"
+  
+  private_doUseViaParameter "$thing"
+  rm "$thing"
+}
+
+function unuse # Uncache, and stop using an item (or piped items from --listAvailable), found in --listAvailable, in the current workspace. --use [itemToUse]
+{
+  if private_stdinIsTerminal; then
+    if [ "$1" != '' ]; then
+      private_doUnUseViaParameter "$1"
+    else
+      echo "Either specify an item, or pipe them from --listAvailable" >&2
+    fi
+  else
+    while read entry;do
+      private_doUnUseViaParameter "$entry"
     done
   fi
 }
