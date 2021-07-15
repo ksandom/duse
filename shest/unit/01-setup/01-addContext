@@ -2,7 +2,7 @@
 # Test --addContext.
 
 . "$SHEST_SCRIPT" "--doNothing"
-HOME=`pwd`
+
 expectedDuseHome="$HOME/.config/duse"
 
 result="$(./bin/duse --addContext shoots "A collection of photo/video shoots.")"

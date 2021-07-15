@@ -3,12 +3,11 @@
 
 . "$SHEST_SCRIPT" "--doNothing"
 
-HOME=`pwd`
 expectedDuseHome="$HOME/.config/duse"
 workspaceHome="$HOME/projects/example/shoots"
 
 cd "$workspaceHome"
-result="$(~-/bin/duse --list 001)"
+result="$($HOME/bin/duse --list 001)"
 exitCode=$?
 
 expect_exitCode 0

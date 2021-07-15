@@ -2,7 +2,7 @@
 # Test --listContext without data.
 
 . "$SHEST_SCRIPT" "--doNothing"
-HOME=`pwd`
+
 expectedDuseHome="$HOME/.config/duse"
 
 result="$(./bin/duse --listContexts 2>&1)"

@@ -2,7 +2,7 @@
 # Test --addSource.
 
 . "$SHEST_SCRIPT" "--doNothing"
-HOME=`pwd`
+
 expectedDuseHome="$HOME/.config/duse"
 
 result="$(./bin/duse --addSource shoots source/source1 archiveShoots 2>&1)"

@@ -3,21 +3,20 @@
 
 . "$SHEST_SCRIPT" "--doNothing"
 
-HOME=`pwd`
 expectedDuseHome="$HOME/.config/duse"
 workspaceHome="$HOME/projects/example/shoots"
 
 cd "$workspaceHome"
-result="$(~-/bin/duse --use 001)"
+result="$($HOME/bin/duse --use 001)"
 exitCode=$?
 
 expect_exitCode 0
 expect_exists 001
 
-~-/bin/duse --use 001
+$HOME/bin/duse --use 001
 expect_exitCode 0
 expect_exists 001
 expect_not_exists 001/001
 
-~-/bin/duse --use nonExistant
+$HOME/bin/duse --use nonExistant
 expect_not_exists nonExistant

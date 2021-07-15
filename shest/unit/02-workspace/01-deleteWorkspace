@@ -2,12 +2,12 @@
 # Test --createWorkspace.
 
 . "$SHEST_SCRIPT" "--doNothing"
-HOME=`pwd`
+
 expectedDuseHome="$HOME/.config/duse"
 workspaceHome="$HOME/projects/example/extra"
 
 cd projects/example
-result="$(~-/bin/duse --deleteWorkspace extra 2>&1)"
+result="$($HOME/bin/duse --deleteWorkspace extra 2>&1)"
 exitCode=$?
 
 expect_exitCode 0

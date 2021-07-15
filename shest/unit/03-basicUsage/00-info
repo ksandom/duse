@@ -2,12 +2,12 @@
 # Write a decription of the test here.
 
 . "$SHEST_SCRIPT" "--doNothing"
-HOME=`pwd`
+
 expectedDuseHome="$HOME/.config/duse"
 workspaceHome="$HOME/projects/example/shoots"
 
 cd "$workspaceHome"
-result="$(~-/bin/duse --info)"
+result="$($HOME/bin/duse --info)"
 exitCode=$?
 
 expect_exitCode 0

@@ -3,7 +3,6 @@
 
 . "$SHEST_SCRIPT" "--doNothing"
 
-HOME=`pwd`
 expectedDuseHome="$HOME/.config/duse"
 workspaceHome="$HOME/projects/example/shoots"
 

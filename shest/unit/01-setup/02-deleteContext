@@ -2,7 +2,7 @@
 # Test --deleteContext.
 
 . "$SHEST_SCRIPT" "--doNothing"
-HOME=`pwd`
+
 expectedDuseHome="$HOME/.config/duse"
 
 result="$(./bin/duse --deleteContext "toDelete")"

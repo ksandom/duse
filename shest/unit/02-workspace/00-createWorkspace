@@ -2,15 +2,15 @@
 # Test --createWorkspace.
 
 . "$SHEST_SCRIPT" "--doNothing"
-HOME=`pwd`
+
 expectedDuseHome="$HOME/.config/duse"
 workspaceHomes="$HOME/projects/example/shoots $HOME/projects/example/extra"
 
 cd projects/example
 
 for workspaceHome in $workspaceHomes; do
-  ~-/bin/duse --createWorkspace shoots extra
-  result="$(~-/bin/duse --createWorkspace shoots shoots 2>&1)"
+  $HOME/bin/duse --createWorkspace shoots extra
+  result="$($HOME/bin/duse --createWorkspace shoots shoots 2>&1)"
   exitCode=$?
   
   expect_exitCode 0
