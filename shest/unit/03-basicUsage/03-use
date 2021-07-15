@@ -18,3 +18,6 @@ expect_exists 001
 expect_exitCode 0
 expect_exists 001
 expect_not_exists 001/001
+
+~-/bin/duse --use nonExistant
+expect_not_exists nonExistant

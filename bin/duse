@@ -504,8 +504,18 @@ function private_doUseViaParameter
 {
   thing="$1"
   
-  # TODO Make sure the item exists.
   if ! source="$(private_getSourceForThing "$thing")"; then
+    echo "Errored while getting source \"$source\" for \"$thing\"."
+    return 1
+  fi
+  
+  if [ "$source" == '' ]; then
+    echo "Source \"$source\" for \"$thing\" is empty."
+    return 1
+  fi
+  
+  if [ ! -e "$source" ]; then
+    echo "Source \"$source\" for \"$thing\" does not exist." >&2
     return 1
   fi
   
