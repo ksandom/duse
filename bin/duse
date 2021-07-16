@@ -1,6 +1,9 @@
 #!/bin/bash
 # duse - A directory shim manager for managing an source and a read-only cache of data.
 
+# Due to how parameters are handled, the shellcheck warning SC2120 gets incorrectly triggered. It's a shame, but not a big deal considering the code is well tested. The comment below disables it.
+# shellcheck disable=SC2120
+
 # Make sure we have $HOME set so that we can make assumptions based on it, and the unit tests can override it.
 if [ "$HOME" == '' ]; then
   HOME=~
@@ -10,13 +13,19 @@ contextHome="$duseHome/contexts"
 warnExitCode=0
 
 if [ -e "$duseHome/overrides" ]; then
+  # shellcheck disable=SC1091
   . "$duseHome/overrides"
 fi
+
 
 
 # ./bin/duse --addContext shoots "A collection of photo/video shoots."
 function addContext # 00: Add a new context that will have sources and cache associated with it. Usage: addContext shortName "Description."
 {
+  local contextName
+  local contextDescription
+  local contextPath
+  
   contextName="$1"
   contextDescription="$2"
   contextPath="$contextHome/$contextName"
@@ -37,6 +46,11 @@ function addContext # 00: Add a new context that will have sources and cache ass
 
 function private_listContextThing
 {
+  local contextName
+  local thingName
+  local thingDirName
+  local thingPath
+  
   contextName="$1"
   thingName="$2"
   thingDirName="$3"
@@ -44,12 +58,14 @@ function private_listContextThing
   
   if [ -e "$thingPath" ]; then
     echo "  $thingName:"
+    
+    # shellcheck disable=SC2012
     if [ "$(ls -1 "$thingPath" | wc -l)" -lt 1 ]; then
       echo "    None anymore."
       rmdir "$thingPath"
     else
       for thingItem in "$thingPath"/*; do
-        echo "    $(basename "$thingItem"): $(cat $thingItem)"
+        echo "    $(basename "$thingItem"): $(cat "$thingItem")"
       done
     fi
   else
@@ -75,7 +91,7 @@ function private_getContexts
 function listContexts # List contexts and their associated data.
 {
   if [ -e "$contextHome" ]; then
-    while read context; do
+    while read -r context; do
       private_showContext "$context"
     done < <(private_getContexts)
   else
@@ -86,8 +102,11 @@ function listContexts # List contexts and their associated data.
 
 function private_contextExists
 {
-  local contextName="$1"
-  local contextPath="$contextHome/$contextName"
+  local contextName
+  local contextPath
+  
+  contextName="$1"
+  contextPath="$contextHome/$contextName"
   
   if [ ! -e "$contextPath" ]; then
     return 1
@@ -98,10 +117,13 @@ function private_contextExists
 
 function deleteContext # Delete a context. --deleteContext contextName . Note that this will delete all duse workspaces and relevant cache, but will not touch the original sources.
 {
-  local contextName="$1"
-  local contextPath="$contextHome/$contextName"
+  local contextName
+  local contextPath
   local workspacePath
   local workspaceName
+  
+  contextName="$1"
+  contextPath="$contextHome/$contextName"
   
   if ! private_contextExists "$contextName"; then
     echo "Context \"$contextName\" not found." >&2
@@ -109,13 +131,11 @@ function deleteContext # Delete a context. --deleteContext contextName . Note th
   fi
   
   # Delete associated workspaces.
-  while read workspace; do
-    echo "deleteContext: Got here: $workspace"
-    workspacePath="$(cat $contextPath/workspaces/$workspace)"
+  while read -r workspace; do
+    workspacePath="$(cat "$contextPath/workspaces/$workspace")"
     if cd "$workspacePath"; then
       cd ..
       workspaceName="$(basename "$workspacePath")"
-      echo "pwd=`pwd` name=$workspaceName path=$workspacePath"
       deleteWorkspace "$workspaceName"
     fi
   done < <(ls -1 "$contextPath/workspaces")
@@ -127,16 +147,23 @@ function deleteContext # Delete a context. --deleteContext contextName . Note th
 
 function private_sourceName # Gives us a unique name based on a file path.
 {
-  local sourcePath="$1"
+  local sourcePath
   
+  sourcePath="$1"
+  
+  # shellcheck disable=SC2001
   echo "$sourcePath" | sed "s#\(/\| \)#_#g"
 }
 
 function private_sourceExists
 {
-  local contextName="$1"
-  local sourceVanillaPath="$2"
-  local sourcePath="$(private_sourcePath "$contextName" "$sourceVanillaPath")"
+  local contextName
+  local sourceVanillaPath
+  local sourcePath
+  
+  contextName="$1"
+  sourceVanillaPath="$2"
+  sourcePath="$(private_sourcePath "$contextName" "$sourceVanillaPath")"
   
   if ! private_contextExists "$contextName"; then
     echo "Context \"$contextName\" not found." >&2
@@ -152,8 +179,11 @@ function private_sourceExists
 
 function private_getSources
 {
-  local contextName="$1"
-  local sourcesPath="$contextHome/$contextName/sources"
+  local contextName
+  local sourcesPath
+  
+  contextName="$1"
+  sourcesPath="$contextHome/$contextName/sources"
   
   if [ ! -e "$sourcesPath" ]; then
     echo "It looks like the current context doesn't have any sources defined yet." >&2
@@ -165,15 +195,21 @@ function private_getSources
 
 function private_sourcePath
 {
-  local contextName="$1"
-  local sourceVanillaPath="$2"
-  local sourcesPath="$contextHome/$contextName/sources"
-  local sourceVanillaName="$3"
+  local contextName
+  local sourceVanillaPath
+  local sourcesPath
+  local sourceVanillaName
+  local sourceName
+  
+  contextName="$1"
+  sourceVanillaPath="$2"
+  sourcesPath="$contextHome/$contextName/sources"
+  sourceVanillaName="$3"
   
   if [ "$sourceVanillaName" == '' ]; then
-    local sourceName="$(private_sourceName "$sourceVanillaPath")"
+    sourceName="$(private_sourceName "$sourceVanillaPath")"
   else
-    local sourceName="$(private_sourceName "$sourceVanillaName")"
+    sourceName="$(private_sourceName "$sourceVanillaName")"
   fi
   
   echo "$sourcesPath/$sourceName"
@@ -181,6 +217,14 @@ function private_sourcePath
 
 function addSource # 01: Add a source to a context. --addsource contextName sourcePath [sourceName]
 {
+  local contextName
+  local contextPath
+  local sourcesPath
+  local sourceVanillaPath
+  local fullSourcePath
+  local sourceName
+  local sourcePath
+  
   contextName="$1"
   contextPath="$contextHome/$contextName"
   sourcesPath="$contextHome/$contextName/sources"
@@ -207,6 +251,13 @@ function addSource # 01: Add a source to a context. --addsource contextName sour
 
 function deleteSource # Delete a source from a context. --deleteSource contextName sourcePath
 {
+  local contextName
+  local contextPath
+  local sourcesPath
+  local sourceVanillaPath
+  local fullSourcePath
+  local sourcePath
+  
   contextName="$1"
   contextPath="$contextHome/$contextName"
   sourcesPath="$contextHome/$contextName/sources"
@@ -229,6 +280,10 @@ function deleteSource # Delete a source from a context. --deleteSource contextNa
 
 function setCache # 02: Set the location where you want cache to be stored. --setCache contextName /path/to/cache/location
 {
+  local contextName
+  local contextPath
+  local cachePath
+  
   contextName="$1"
   contextPath="$contextHome/$contextName"
   cachePath="$(realpath "$2")"
@@ -249,6 +304,9 @@ function setCache # 02: Set the location where you want cache to be stored. --se
 
 function private_getCache
 {
+  local contextName
+  local contextPath
+  
   contextName="$1"
   contextPath="$contextHome/$contextName"
   
@@ -257,12 +315,19 @@ function private_getCache
 
 function private_registerWorkspace
 {
-  local contextName="$1"
-  local contextPath="$contextHome/$contextName"
-  local workspaceName="$2"
-  local workspacePath="`pwd`/$workspaceName"
-  local workspaceNiceName=$(private_sourceName "$workspacePath")
-  local action="${3:-register}"
+  local contextName
+  local contextPath
+  local workspaceName
+  local workspacePath
+  local workspaceNiceName
+  local action
+  
+  contextName="$1"
+  contextPath="$contextHome/$contextName"
+  workspaceName="$2"
+  workspacePath="$(pwd)/$workspaceName"
+  workspaceNiceName=$(private_sourceName "$workspacePath")
+  action="${3:-register}"
   
   case "$action" in
     "register")
@@ -272,11 +337,10 @@ function private_registerWorkspace
     ;;
     "unregister")
       echo "Unregistering $workspacePath from $contextName..."
-      echo "  $contextPath"
-      ls $contextPath/workspaces/$workspaceNiceName
-      rm -fv "$contextPath/workspaces/$workspaceNiceName"
-      if [ "$(ls "$contextPath/workspaces" | wc -l)" -lt 1 ]; then
-        rmdir -v "$contextPath/workspaces"
+      rm -fv "$contextPath/workspaces/$workspaceNiceName" | indent
+      # shellcheck disable=SC2012
+      if [ "$(ls -1 "$contextPath/workspaces" | wc -l)" -lt 1 ]; then
+        rmdir -v "$contextPath/workspaces" | indent
       fi
     ;;
   esac
@@ -284,8 +348,11 @@ function private_registerWorkspace
 
 function private_gentleSetType
 {
-  local dirPath="$1"
-  local type="$2"
+  local dirPath
+  local type
+  
+  dirPath="$1"
+  type="$2"
   
   if [ ! -e "$dirPath/.duse/type" ]; then
     mkdir -p "$dirPath/.duse"
@@ -297,7 +364,9 @@ function private_gentleSetType
 
 function private_getType
 {
-  local dirPath="$1"
+  local dirPath
+  
+  dirPath="$1"
   
   if [ ! -e "$dirPath/.duse/type" ]; then
     echo "Unknown"
@@ -309,9 +378,13 @@ function private_getType
 
 function createWorkspace # 03: Create a workspace that will use the context that you have created. --createWorkspace contextName workspaceName
 {
-  local contextName="$1"
-  local contextPath="$contextHome/$contextName"
-  local workspaceName="$2"
+  local contextName
+  local contextPath
+  local workspaceName
+  
+  contextName="$1"
+  contextPath="$contextHome/$contextName"
+  workspaceName="$2"
   
   mkdir -p "$workspaceName/.duse"
   echo "$contextName" > "$workspaceName/.duse/context"
@@ -323,11 +396,12 @@ function createWorkspace # 03: Create a workspace that will use the context that
 
 function private_emptyWorkspace
 {
-  local workspacePath="$1"
-  local thing
+  local workspacePath
+  
+  workspacePath="$1"
   
   if cd "$workspacePath"; then
-    ls -1 | unuse
+    find . -maxdepth 1 | unuse
     cd  ..
   else
     echo "private_emptyWorkspace: Could not find $workspacePath ." >&2
@@ -337,20 +411,25 @@ function private_emptyWorkspace
 
 function deleteWorkspace # Delete a workspace. --deleteWorkspace workspaceNameOrPath
 {
-  local workspaceNameOrPath="$1"
+  local workspaceNameOrPath
+  local contextName
+  local contextPath
+  local type
+  
+  workspaceNameOrPath="$1"
   if [ ! -e "$workspaceNameOrPath/.duse" ] || [ ! -e "$workspaceNameOrPath/.duse/type" ]; then
     echo "Could not find a valid workspace at \"$workspaceNameOrPath\"." >&2
     return 1
   fi
   
-  local type="$(cat "$workspaceNameOrPath/.duse/type")"
+  type="$(cat "$workspaceNameOrPath/.duse/type")"
   if [ "$type" != 'workspace' ]; then
     echo "\"$workspaceNameOrPath\"($type) does not appear to be a workspace." >&2
     return 1
   fi
   
-  local contextName="$(cat "$workspaceNameOrPath/.duse/context")"
-  local contextPath="$contextHome/$contextName"
+  contextName="$(cat "$workspaceNameOrPath/.duse/context")"
+  contextPath="$contextHome/$contextName"
   
   private_emptyWorkspace "$workspaceNameOrPath"
   
@@ -370,14 +449,18 @@ function info # Show basic information about the current workspace.
 
 function private_whichSource
 {
-  local contextName="$1"
-  local contextPath="$contextHome/$contextName"
-  local linkSource="$2"
+  local contextName
+  local contextPath
+  local linkSource
+  
+  contextName="$1"
+  contextPath="$contextHome/$contextName"
+  linkSource="$2"
   
   for source in "$contextPath/sources"/*; do
     resolvedSource="$(cat "$source")"
     if [ "$resolvedSource" == "$linkSource" ]; then
-      echo "$(basename "$source")"
+      basename "$source"
       return 0
     fi
   done
@@ -386,17 +469,21 @@ function private_whichSource
 
 function private_getEntryType
 {
-  local contextName="$1"
-  local contextPath="$contextHome/$contextName"
-  local entry="$2"
-
+  local contextName
+  local contextPath
+  local entry
+  local linkSource
+  
+  contextName="$1"
+  contextPath="$contextHome/$contextName"
+  entry="$2"
   linkSource="$(dirname "$(readlink "$entry")")"
   
   
   if [ -L "$entry" ]; then
     if [ "$linkSource" == "$(private_getCache "$contextName")/$contextName" ]; then
       echo "Cached"
-    elif sounds="$(private_whichSource "$contextName" "$linkSource")"; then
+    elif private_whichSource "$contextName" "$linkSource" >/dev/null; then
       echo "Uncached"
     else
       echo "Invalid link"
@@ -413,8 +500,11 @@ function private_getEntryType
 
 function private_entryInCache
 {
-  local context="$1"
-  local entry="$2"
+  local context
+  local entry
+  
+  context="$1"
+  entry="$2"
   
   if [ -e "" ]; then
     true
@@ -425,8 +515,11 @@ function private_entryInCache
 
 function private_entryInSource
 {
-  local context="$1"
-  local entry="$2"
+  local context
+  local entry
+  
+  context="$1"
+  entry="$2"
   
   if sources="$(private_getSourcesForThing "$entry" 2>/dev/null)"; then
     if [ "$(echo "$sources" | wc -l)" -gt 1 ]; then
@@ -439,8 +532,11 @@ function private_entryInSource
 
 function private_isAvailable
 {
-  local thing="$1"
-  local origin="$(readlink "$thing")"
+  local thing
+  local origin
+  
+  thing="$1"
+  origin="$(readlink "$thing")"
   
   if [ -e "$origin" ]; then
     echo "Yes"
@@ -469,7 +565,7 @@ function list # List the items in the current workspace (current directory), and
   {
     # Compile together the output.
     echo "$headings"
-    while read entry; do
+    while read -r entry; do
       entryType="$(private_getEntryType "$context" "$entry")"
       
       if [ "${entryType::7}" != 'Invalid' ]; then
@@ -495,8 +591,8 @@ function private_listAllPossibleCachableThings
   sourcesPath="$contextHome/$contextName/sources"
 
   
-  while read source; do
-    ls -1 "$(cat $sourcesPath/$source)"
+  while read -r source; do
+    ls -1 "$(cat "$sourcesPath/$source")"
   done < <(private_getSources "$contextName")
 }
 
@@ -507,7 +603,9 @@ function listAvailable # List out the things that you can cache in the current w
 
 function private_getSourcesForThing
 {
-  local thing="$1"
+  local thing
+  
+  thing="$1"
   
   if [ ! -e '.duse/context' ]; then
     echo "This does not appear to be a workspace." >&2
@@ -518,8 +616,8 @@ function private_getSourcesForThing
   sourcesPath="$contextHome/$contextName/sources"
 
   
-  while read source; do
-    thingPath="$(cat $sourcesPath/$source)/$thing"
+  while read -r source; do
+    thingPath="$(cat "$sourcesPath/$source")/$thing"
     if [ -e "$thingPath" ]; then
       echo "$thingPath"
     fi
@@ -528,7 +626,9 @@ function private_getSourcesForThing
 
 function private_getSourceForThing
 {
-  local thing="$1"
+  local thing
+  
+  thing="$1"
   
   if ! sources="$(private_getSourcesForThing "$thing")"; then
     return 1
@@ -541,6 +641,7 @@ function private_getSourceForThing
     return 1
   elif [ "$numberOfSources" -gt 1 ]; then
     echo "There appear to be multiple sources for this item:" >&2
+    # shellcheck disable=SC2001
     echo "$sources" | sed 's/^/  /g' >&2
     echo -e "\nWill assume the first. But you should definitely fix this. You don't have a single source of truth." >&2
     echo "$sources" | head -n 1
@@ -552,6 +653,8 @@ function private_getSourceForThing
 
 function private_doUseViaParameter
 {
+  local thing
+  
   thing="$1"
   
   if ! source="$(private_getSourceForThing "$thing")"; then
@@ -581,14 +684,16 @@ function use # Use an item (or piped items from --listAvailable), found in --lis
 
 function private_doUnUseViaParameter
 {
-  local thing="$1"
+  local thing
+  
+  thing="$1"
   
   private_doUncacheViaParameter "$thing"
   private_doUseViaParameter "$thing"
   rm "$thing"
 }
 
-function unuse # Uncache, and stop using an item (or piped items from --listAvailable), found in --listAvailable, in the current workspace. --use [itemToUse]
+function unuse # Uncache, and stop using an item (or piped items from --listAvailable), found in --listAvailable, in the current workspace. --unuse [itemToUnuse]
 {
   private_abstractDirection "private_doUnUseViaParameter" "$1" "noProject"
   return "$?"
@@ -596,18 +701,25 @@ function unuse # Uncache, and stop using an item (or piped items from --listAvai
 
 function private_doCacheViaParameter
 {
-  local thing="$1"
+  local thing
+  local contextName
+  local workspaceName
+  local cacheDir
+  local source
+  local thingDir
+  
+  thing="$1"
   
   if [ ! -e '.duse/context' ]; then
     echo "This does not appear to be a workspace." >&2
     return 1
   fi
   
-  local contextName="$(cat '.duse/context')"
-  local workspaceName="$(private_sourceName "$(pwd)")"
-  local cacheDir="$(private_getCache "$contextName")"
-  local source="$(private_getSourceForThing "$thing")"
-  local thingDir="$cacheDir/$contextName/$thing"
+  contextName="$(cat '.duse/context')"
+  workspaceName="$(private_sourceName "$(pwd)")"
+  cacheDir="$(private_getCache "$contextName")"
+  source="$(private_getSourceForThing "$thing")"
+  thingDir="$cacheDir/$contextName/$thing"
   
   echo "$(pwd)/$thing"
   echo "Setup..." | private_indent
@@ -625,8 +737,11 @@ function private_doCacheViaParameter
 
 function private_syncDir
 {
-  local cacheDir="$1"
-  local source="$(cat "$cacheDir/.duse/source")"
+  local cacheDir
+  local source
+  
+  cacheDir="$1"
+  source="$(cat "$cacheDir/.duse/source")"
   
   echo "Sync $cacheDir..."
   rsync -ruv "$source/"* "$cacheDir" | private_indent
@@ -640,28 +755,42 @@ function cache # Switch an item( or piped items from --listAvailable) to using c
 
 function private_cacheUsageForThing
 {
-  local contextName="$1"
-  local thing="$2"
-  local cacheDir="$(private_getCache "$contextName")"
-  local thingDir="$cacheDir/$contextName/$thing"
+  local contextName
+  local thing
+  local cacheDir
+  local thingDir
+  
+  contextName="$1"
+  thing="$2"
+  cacheDir="$(private_getCache "$contextName")"
+  thingDir="$cacheDir/$contextName/$thing"
   
   private_cacheUsage "$thingDir"
 }
 
 function private_cacheUsage
 {
-  local thingDir="$1"
+  local thingDir
   
+  thingDir="$1"
+  
+  # shellcheck disable=SC2012 # Overkill, and not relevant to what it's doing.
   ls -1 "$thingDir/.duse/usage" 2>/dev/null | wc -l
 }
 
 function private_removeFromCache
 {
-  local contextName="$1"
-  local thing="$2"
-  local cacheUsage="$(private_cacheUsageForThing "$contextName" "$thing")"
-  local cacheDir="$(private_getCache "$contextName")"
-  local thingDir="$cacheDir/$contextName/$thing"
+  local contextName
+  local thing
+  local cacheUsage
+  local cacheDir
+  local thingDir
+  
+  contextName="$1"
+  thing="$2"
+  cacheUsage="$(private_cacheUsageForThing "$contextName" "$thing")"
+  cacheDir="$(private_getCache "$contextName")"
+  thingDir="$cacheDir/$contextName/$thing"
   
   if [ ! -e "$thingDir" ]; then
     echo "private_removeFromCache: cache for $thing does not exist. Will not clean." >&2
@@ -677,13 +806,22 @@ function private_removeFromCache
 
 function private_doUncacheViaParameter
 {
-  local thing="$1"
-  local contextName="$(cat '.duse/context')"
-  local workspaceName="$(private_sourceName "$(pwd)")"
-  local cacheDir="$(private_getCache "$contextName")"
-  local thingDir="$cacheDir/$contextName/$thing"
-  local originalSource="$(cat "$thingDir/.duse/source" 2>/dev/null)"
-  local derivedSource="$(private_getSourceForThing "$thing")"
+  local thing
+  local contextName
+  local workspaceName
+  local cacheDir
+  local thingDir
+  local originalSource
+  local derivedSource
+  local cacheUsage
+  
+  thing="$1"
+  contextName="$(cat '.duse/context')"
+  workspaceName="$(private_sourceName "$(pwd)")"
+  cacheDir="$(private_getCache "$contextName")"
+  thingDir="$cacheDir/$contextName/$thing"
+  originalSource="$(cat "$thingDir/.duse/source" 2>/dev/null)"
+  derivedSource="$(private_getSourceForThing "$thing")"
   
   echo "$(pwd)/$thing"
   
@@ -700,7 +838,7 @@ function private_doUncacheViaParameter
   echo "Unregister from cache... $thingDir" | private_indent
   rm -f "$thingDir/.duse/usage/$workspaceName"
 
-  local cacheUsage="$(private_cacheUsageForThing "$contextName" "$thing")"
+  cacheUsage="$(private_cacheUsageForThing "$contextName" "$thing")"
   if [ "$cacheUsage" -eq 0 ]; then
     echo "Clean cache... $thingDir" | private_indent
     private_removeFromCache "$contextName" "$thing"
@@ -718,7 +856,7 @@ function uncache # Switch an item( or piped items from --listAvailable) back to 
 function private_checkUsage
 {
   cacheEntryDir="$1"
-  while read workspaceName in; do
+  while read -r workspaceName; do
     workspaceDescriptor="$cacheEntryDir/.duse/usage/$workspaceName"
     if [ ! -e  "$(cat "$workspaceDescriptor")" ]; then
       rm "$workspaceDescriptor"
@@ -728,25 +866,24 @@ function private_checkUsage
 
 function sync # Sync cache to make sure it is up-to-date. Also remove orphaned entries.
 {
-  while read contextName; do
+  while read -r contextName; do
     contextCache="$(private_getCache "$contextName")/$contextName"
-    cd "$contextCache"
-    while read cacheEntry; do
-      private_checkUsage "$cacheEntry"
-      cacheUsage="$(private_cacheUsage "$cacheEntry")"
-      
-      if [ "$cacheUsage" -gt 0 ]; then
-        private_syncDir "$cacheEntry"
-      else
-        echo "Removing $cacheEntry..."
-        rm -Rf "$cacheEntry"
-      fi
-      
-    done < <(ls -1)
+    if cd "$contextCache"; then
+      while read -r cacheEntry; do
+        private_checkUsage "$cacheEntry"
+        cacheUsage="$(private_cacheUsage "$cacheEntry")"
+        
+        if [ "$cacheUsage" -gt 0 ]; then
+          private_syncDir "$cacheEntry"
+        else
+          echo "Removing $cacheEntry..."
+          rm -Rf "$cacheEntry"
+        fi
+        
+      done < <(ls -1)
+    fi
   done < <(private_getContexts)
 }
-
-# TODO Project wide versions of stuff.
 
 
 
@@ -754,18 +891,22 @@ function sync # Sync cache to make sure it is up-to-date. Also remove orphaned e
 
 function private_abstractDirection_projectWide
 {
-  local functionName="$1"
-  local input="$2"
+  local functionName
+  local input
   
-  while read potentialWorkspace; do
-    if [ "$(private_getType "$(pwd)"/$potentialWorkspace)" == 'workspace' ]; then
+  functionName="$1"
+  input="$2"
+  
+  while read -r potentialWorkspace; do
+    if [ "$(private_getType "$(pwd)/$potentialWorkspace")" == 'workspace' ]; then
       echo "Entering workspace $potentialWorkspace..."
       
-      cd "$potentialWorkspace"
-      
-      listAvailable| private_abstractDirection "$functionName" "$input"
-      
-      cd ..
+      if cd "$potentialWorkspace"; then
+        listAvailable| private_abstractDirection "$functionName" "$input"
+        
+        # This warning is disabled, because after extensive testing, it's simply wrong
+        cd ..
+      fi
     else
       echo "Skipping \"$potentialWorkspace\"."
     fi
@@ -774,10 +915,15 @@ function private_abstractDirection_projectWide
 
 function private_abstractDirection
 {
-  local functionName="$1"
-  local input="$2"
-  local extraOptions="$3"
-  local type="$(private_getType "$(pwd)")"
+  local functionName
+  local input
+  local extraOptions
+  local type
+  
+  functionName="$1"
+  input="$2"
+  extraOptions="$3"
+  type="$(private_getType "$(pwd)")"
   
   case "$type" in
     "project")
@@ -795,7 +941,7 @@ function private_abstractDirection
         if private_stdinIsTerminal; then
           listAvailable | private_abstractDirection "$functionName" "$input"
         else
-          while read entry; do
+          while read -r entry; do
             "$functionName" "$entry"
           done
         fi
