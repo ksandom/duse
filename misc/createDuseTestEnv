@@ -28,4 +28,8 @@ duse --use 001
 duse --list
 
 duse --listAvailable | duse --use
+duse --cache
 duse --list
+
+# cd ..
+# duse --deleteWorkspace workspace

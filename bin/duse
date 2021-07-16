@@ -96,15 +96,29 @@ function private_contextExists
   fi
 }
 
-function deleteContext # Delete a context. --deleteContext contextName . Note that this will delete all duse references to the context, but will not check any cases where it might be used. If they exist, they will be orphaned and unmanaged. The context can be manually re-created, and the references will be usable again.
+function deleteContext # Delete a context. --deleteContext contextName . Note that this will delete all duse workspaces and relevant cache, but will not touch the original sources.
 {
-  contextName="$1"
-  contextPath="$contextHome/$contextName"
+  local contextName="$1"
+  local contextPath="$contextHome/$contextName"
+  local workspacePath
+  local workspaceName
   
   if ! private_contextExists "$contextName"; then
     echo "Context \"$contextName\" not found." >&2
     return 1
   fi
+  
+  # Delete associated workspaces.
+  while read workspace; do
+    echo "deleteContext: Got here: $workspace"
+    workspacePath="$(cat $contextPath/workspaces/$workspace)"
+    if cd "$workspacePath"; then
+      cd ..
+      workspaceName="$(basename "$workspacePath")"
+      echo "pwd=`pwd` name=$workspaceName path=$workspacePath"
+      deleteWorkspace "$workspaceName"
+    fi
+  done < <(ls -1 "$contextPath/workspaces")
   
   rm -Rfv "$contextPath"
 }
@@ -256,7 +270,7 @@ function private_registerWorkspace
       echo "$workspacePath" > "$contextPath/workspaces/$workspaceNiceName"
     ;;
     "unregister")
-      rm "$contextPath/workspaces/$workspaceNiceName"
+      rm -f "$contextPath/workspaces/$workspaceNiceName"
       if [ "$(ls "$contextPath/workspaces" | wc -l)" -lt 1 ]; then
         rmdir "$contextPath/workspaces"
       fi
@@ -279,28 +293,23 @@ function createWorkspace # 03: Create a workspace that will use the context that
 function private_emptyWorkspace
 {
   local workspacePath="$1"
+  local thing
   
   cd "$workspacePath"
   
-  while read thing;do
-    unuse "$thing"
-  done < <(ls -1)
-  
-  cd ..
+  ls -1 | unuse
 }
 
-function deleteWorkspace # Delete a workspace. --createWorkspace workspaceNameOrPath
+function deleteWorkspace # Delete a workspace. --deleteWorkspace workspaceNameOrPath
 {
-  workspaceNameOrPath="$1"
+  local workspaceNameOrPath="$1"
   if [ ! -e "$workspaceNameOrPath/.duse" ]; then
     echo "Could not find a valid workspace at \"$workspaceNameOrPath\"." >&2
     return 1
   fi
   
-  contextName="$(cat "$workspaceNameOrPath/.duse/context")"
-  contextPath="$contextHome/$contextName"
-  
-  # TODO uncache everything in this workspace.
+  local contextName="$(cat "$workspaceNameOrPath/.duse/context")"
+  local contextPath="$contextHome/$contextName"
   
   private_emptyWorkspace "$workspaceNameOrPath"
   
@@ -540,14 +549,16 @@ function use # Use an item (or piped items from --listAvailable), found in --lis
 
 function private_doUnUseViaParameter
 {
-  thing="$1"
+  local thing="$1"
   
+  private_doUncacheViaParameter "$thing"
   private_doUseViaParameter "$thing"
   rm "$thing"
 }
 
 function unuse # Uncache, and stop using an item (or piped items from --listAvailable), found in --listAvailable, in the current workspace. --use [itemToUse]
 {
+  local entry
   if private_stdinIsTerminal; then
     if [ "$1" != '' ]; then
       private_doUnUseViaParameter "$1"

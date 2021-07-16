@@ -7,7 +7,19 @@ expectedDuseHome="$HOME/.config/duse"
 workspaceHome="$HOME/projects/example/shoots"
 
 cd "$workspaceHome"
+
+result="$($HOME/bin/duse --cache)"
+exitCode=$?
+expect_exitCode 0
+
 cd ..
+
+expect_exists "$HOME/cache/shoots/001"
+expect_exists "$HOME/cache/shoots/002"
+expect_exists "$HOME/cache/shoots/003"
+expect_exists "$HOME/cache/shoots/004"
+expect_exists "$HOME/cache/shoots/005"
+expect_exists "$HOME/cache/shoots/006"
 
 result="$($HOME/bin/duse --deleteWorkspace shoots)"
 exitCode=$?

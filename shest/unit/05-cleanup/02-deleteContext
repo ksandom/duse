@@ -1,0 +1,45 @@
+#!/bin/bash
+# Test --deleteContext with cleanup.
+# Note that this is not testing the general --deleteContext stuff, which is already covered in 01-setup.
+
+. "$SHEST_SCRIPT" "--doNothing"
+
+expectedDuseHome="$HOME/.config/duse"
+workspaceHome="$HOME/projects/example/shoots"
+
+## Let's re-create the workspace.
+cd "$HOME/projects/example"
+$HOME/bin/duse --createWorkspace shoots shoots
+exitCode=$?
+expect_exitCode 0
+
+cd shoots
+$HOME/bin/duse --listAvailable | $HOME/bin/duse --use
+exitCode=$?
+expect_exitCode 0
+
+# We're going to cache 001, 002, and 003, but not the rest.
+ls -1 | sort | head -n3 | $HOME/bin/duse --cache
+exitCode=$?
+expect_exitCode 0
+
+result="$($HOME/bin/duse --list)"
+exitCode=$?
+expect_exitCode 0
+
+# Make sure we cached the right stuff.
+expect_resultContains "00[123].*Cached"
+expect_resultContains "00[456].*Uncached"
+
+# Now let's test that --deleteContext cleans up workspaces and their associated things.
+cd ..
+$HOME/bin/duse --deleteContext shoots
+
+expect_not_exists "$HOME/cache/shoots/001"
+expect_not_exists "$HOME/cache/shoots/002"
+expect_not_exists "$HOME/cache/shoots/003"
+expect_not_exists "$HOME/cache/shoots/004"
+expect_not_exists "$HOME/cache/shoots/005"
+expect_not_exists "$HOME/cache/shoots/006"
+
+expect_not_exists shoots
