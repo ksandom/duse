@@ -12,6 +12,7 @@ exitCode=$?
 
 expect_exitCode 0
 expect_not_exists "$workspaceHome/.duse/context"
+expect_not_exists "$workspaceHome/.duse/type"
 expect_not_exists "$workspaceHome/.duse"
 expect_not_exists "$workspaceHome"
 

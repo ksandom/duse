@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test --addSource.
+# Test that the sources show up in --listContexts.
 
 . "$SHEST_SCRIPT" "--doNothing"
 

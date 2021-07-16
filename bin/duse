@@ -266,26 +266,57 @@ function private_registerWorkspace
   
   case "$action" in
     "register")
+      echo "Registering $workspaceName in $contextName..."
       mkdir -p "$contextPath/workspaces"
       echo "$workspacePath" > "$contextPath/workspaces/$workspaceNiceName"
     ;;
     "unregister")
-      rm -f "$contextPath/workspaces/$workspaceNiceName"
+      echo "Unregistering $workspacePath from $contextName..."
+      echo "  $contextPath"
+      ls $contextPath/workspaces/$workspaceNiceName
+      rm -fv "$contextPath/workspaces/$workspaceNiceName"
       if [ "$(ls "$contextPath/workspaces" | wc -l)" -lt 1 ]; then
-        rmdir "$contextPath/workspaces"
+        rmdir -v "$contextPath/workspaces"
       fi
     ;;
   esac
 }
 
+function private_gentleSetType
+{
+  local dirPath="$1"
+  local type="$2"
+  
+  if [ ! -e "$dirPath/.duse/type" ]; then
+    mkdir -p "$dirPath/.duse"
+    echo "$type" > "$dirPath/.duse/type"
+  else
+    return 1
+  fi
+}
+
+function private_getType
+{
+  local dirPath="$1"
+  
+  if [ ! -e "$dirPath/.duse/type" ]; then
+    echo "Unknown"
+    return 1
+  else
+    cat "$dirPath/.duse/type"
+  fi
+}
+
 function createWorkspace # 03: Create a workspace that will use the context that you have created. --createWorkspace contextName workspaceName
 {
-  contextName="$1"
-  contextPath="$contextHome/$contextName"
-  workspaceName="$2"
+  local contextName="$1"
+  local contextPath="$contextHome/$contextName"
+  local workspaceName="$2"
   
   mkdir -p "$workspaceName/.duse"
   echo "$contextName" > "$workspaceName/.duse/context"
+  private_gentleSetType "$workspaceName" "workspace"
+  private_gentleSetType "$workspaceName/.." "project"
   
   private_registerWorkspace "$contextName" "$workspaceName"
 }
@@ -295,16 +326,26 @@ function private_emptyWorkspace
   local workspacePath="$1"
   local thing
   
-  cd "$workspacePath"
-  
-  ls -1 | unuse
+  if cd "$workspacePath"; then
+    ls -1 | unuse
+    cd  ..
+  else
+    echo "private_emptyWorkspace: Could not find $workspacePath ." >&2
+    return 1
+  fi
 }
 
 function deleteWorkspace # Delete a workspace. --deleteWorkspace workspaceNameOrPath
 {
   local workspaceNameOrPath="$1"
-  if [ ! -e "$workspaceNameOrPath/.duse" ]; then
+  if [ ! -e "$workspaceNameOrPath/.duse" ] || [ ! -e "$workspaceNameOrPath/.duse/type" ]; then
     echo "Could not find a valid workspace at \"$workspaceNameOrPath\"." >&2
+    return 1
+  fi
+  
+  local type="$(cat "$workspaceNameOrPath/.duse/type")"
+  if [ "$type" != 'workspace' ]; then
+    echo "\"$workspaceNameOrPath\"($type) does not appear to be a workspace." >&2
     return 1
   fi
   
@@ -534,17 +575,8 @@ function private_doUseViaParameter
 
 function use # Use an item (or piped items from --listAvailable), found in --listAvailable, in the current workspace. --use [itemToUse]
 {
-  if private_stdinIsTerminal; then
-    if [ "$1" != '' ]; then
-      private_doUseViaParameter "$1"
-    else
-      echo "Either specify an item, or pipe them from --listAvailable" >&2
-    fi
-  else
-    while read entry;do
-      private_doUseViaParameter "$entry"
-    done
-  fi
+  private_abstractDirection "private_doUseViaParameter" "$1" "noProject"
+  return "$?"
 }
 
 function private_doUnUseViaParameter
@@ -558,18 +590,8 @@ function private_doUnUseViaParameter
 
 function unuse # Uncache, and stop using an item (or piped items from --listAvailable), found in --listAvailable, in the current workspace. --use [itemToUse]
 {
-  local entry
-  if private_stdinIsTerminal; then
-    if [ "$1" != '' ]; then
-      private_doUnUseViaParameter "$1"
-    else
-      echo "Either specify an item, or pipe them from --listAvailable" >&2
-    fi
-  else
-    while read entry;do
-      private_doUnUseViaParameter "$entry"
-    done
-  fi
+  private_abstractDirection "private_doUnUseViaParameter" "$1" "noProject"
+  return "$?"
 }
 
 function private_doCacheViaParameter
@@ -592,6 +614,7 @@ function private_doCacheViaParameter
   mkdir -p "$thingDir/.duse/usage"
   echo "$source" > "$thingDir/.duse/source"
   echo "$(pwd)/$thing" > "$thingDir/.duse/usage/$workspaceName"
+  private_gentleSetType "$thingDir" "cacheEntry"
   
   private_syncDir "$thingDir" | private_indent
   
@@ -611,17 +634,8 @@ function private_syncDir
 
 function cache # Switch an item( or piped items from --listAvailable) to using cache. --cache itemToCache
 {
-  if private_stdinIsTerminal; then
-    if [ "$1" != '' ]; then
-      private_doCacheViaParameter "$1"
-    else
-      listAvailable | cache
-    fi
-  else
-    while read entry;do
-      private_doCacheViaParameter "$entry"
-    done
-  fi
+  private_abstractDirection "private_doCacheViaParameter" "$1"
+  return "$?"
 }
 
 function private_cacheUsageForThing
@@ -697,17 +711,8 @@ function private_doUncacheViaParameter
 
 function uncache # Switch an item( or piped items from --listAvailable) back to using cache. --uncache itemToUncache
 {
-  if private_stdinIsTerminal; then
-    if [ "$1" != '' ]; then
-      private_doUncacheViaParameter "$1"
-    else
-      listAvailable | uncache
-    fi
-  else
-    while read entry;do
-      private_doUncacheViaParameter "$entry"
-    done
-  fi
+  private_abstractDirection "private_doUncacheViaParameter" "$1"
+  return "$?"
 }
 
 function private_checkUsage
@@ -741,11 +746,68 @@ function sync # Sync cache to make sure it is up-to-date. Also remove orphaned e
   done < <(private_getContexts)
 }
 
-# TODO un-createContext (what to cleanup on delete.)
-# TODO un-createWorkspace (what to cleanup on delete.)
 # TODO Project wide versions of stuff.
 
+
+
 ################################################################################
+
+function private_abstractDirection_projectWide
+{
+  local functionName="$1"
+  local input="$2"
+  
+  while read potentialWorkspace; do
+    if [ "$(private_getType "$(pwd)"/$potentialWorkspace)" == 'workspace' ]; then
+      echo "Entering workspace $potentialWorkspace..."
+      
+      cd "$potentialWorkspace"
+      
+      listAvailable| private_abstractDirection "$functionName" "$input"
+      
+      cd ..
+    else
+      echo "Skipping \"$potentialWorkspace\"."
+    fi
+  done < <(ls -1)
+}
+
+function private_abstractDirection
+{
+  local functionName="$1"
+  local input="$2"
+  local extraOptions="$3"
+  local type="$(private_getType "$(pwd)")"
+  
+  case "$type" in
+    "project")
+      if [ "$extraOptions" == 'noProject' ]; then
+        echo "This feature doesn't make sense in a project directory. Try an individual workspace." >&2
+        return 1
+      else
+        private_abstractDirection_projectWide "$functionName" "$input"
+      fi
+    ;;
+    "workspace")
+      if [ "$input" != '' ]; then
+        "$functionName" "$input"
+      else
+        if private_stdinIsTerminal; then
+          listAvailable | private_abstractDirection "$functionName" "$input"
+        else
+          while read entry; do
+            "$functionName" "$entry"
+          done
+        fi
+      fi
+    ;;
+    *)
+      echo "$(pwd)($type) doesn't appear to be a project, or workspace. Can't continue." >&2
+      return 1
+    ;;
+  esac
+}
+
 
 function private_indent
 {

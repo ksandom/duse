@@ -8,16 +8,24 @@ workspaceHomes="$HOME/projects/example/shoots $HOME/projects/example/extra"
 
 cd projects/example
 
+result="$($HOME/bin/duse --createWorkspace shoots extra)"
+exitCode=$?
+expect_exitCode 0 "--createWorkspace extra"
+
+result="$($HOME/bin/duse --createWorkspace shoots shoots 2>&1)"
+exitCode=$?
+expect_exitCode 0 "--createWorkspace shoots"
+
 for workspaceHome in $workspaceHomes; do
-  $HOME/bin/duse --createWorkspace shoots extra
-  result="$($HOME/bin/duse --createWorkspace shoots shoots 2>&1)"
-  exitCode=$?
   
-  expect_exitCode 0
-  expect_exists "$workspaceHome/.duse/context"
-  expect_fileContains "$workspaceHome/.duse/context" "shoots"
+  expect_exists "$workspaceHome/.duse/context" "$workspaceHome"
+  expect_fileContains "$workspaceHome/.duse/context" "shoots" "$workspaceHome"
+  expect_exists "$workspaceHome/.duse/type" "$workspaceHome"
+  expect_fileContains "$workspaceHome/.duse/type" "workspace" "$workspaceHome"
+  expect_exists ".duse/type" "$workspaceHome"
+  expect_fileContains ".duse/type" "project" "$workspaceHome"
   
   name="$(echo "$workspaceHome" | sed "s#\(/\| \)#_#g")"
-  expect_exists "$expectedDuseHome/contexts/shoots/workspaces/$name"
-  expect_fileContains "$expectedDuseHome/contexts/shoots/workspaces/$name" "$(basename "$workspaceHome")"
+  expect_exists "$expectedDuseHome/contexts/shoots/workspaces/$name" "$workspaceHome"
+  expect_fileContains "$expectedDuseHome/contexts/shoots/workspaces/$name" "$(basename "$workspaceHome")" "$workspaceHome"
 done

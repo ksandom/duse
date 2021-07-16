@@ -18,10 +18,11 @@ duse --setCache shoots /tmp/duseTestEnv/cache
 
 # Create the workspace.
 cd projects/example
-duse --createWorkspace shoots workspace
+duse --createWorkspace shoots workspace1
+duse --createWorkspace shoots workspace2
 
 # And 
-cd workspace
+cd workspace1
 duse --info
 duse --listAvailable
 duse --use 001
@@ -31,5 +32,23 @@ duse --listAvailable | duse --use
 duse --cache
 duse --list
 
+# duse --uncache 001
+
 # cd ..
 # duse --deleteWorkspace workspace
+
+cd ..
+cd workspace2
+duse --info
+duse --listAvailable
+duse --use 001
+duse --list
+
+duse --listAvailable | duse --use
+duse --cache
+duse --list
+
+cd ..
+pwd
+duse --cache
+duse --uncache
