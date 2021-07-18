@@ -16,7 +16,7 @@ cd ..
 
 expect_exists "$HOME/cache/shoots/001"
 expect_exists "$HOME/cache/shoots/002"
-expect_exists "$HOME/cache/shoots/003"
+expect_not_exists "$HOME/cache/shoots/003"
 expect_exists "$HOME/cache/shoots/004"
 expect_exists "$HOME/cache/shoots/005"
 expect_exists "$HOME/cache/shoots/006"

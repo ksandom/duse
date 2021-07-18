@@ -939,7 +939,8 @@ function private_abstractDirection
         "$functionName" "$input"
       else
         if private_stdinIsTerminal; then
-          listAvailable | private_abstractDirection "$functionName" "$input"
+          # shellcheck disable=SC2012
+          ls -1 | private_abstractDirection "$functionName" "$input"
         else
           while read -r entry; do
             "$functionName" "$entry"
