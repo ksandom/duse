@@ -7,8 +7,7 @@ expectedDuseHome="$HOME/.config/duse"
 workspaceHome="$HOME/projects/example/shoots"
 
 cd "$workspaceHome"
-result="$($HOME/bin/duse --info 2>&1)"
-exitCode=$?
+$HOME/bin/duse --info ## Test this.
 
 expect_exitCode 0
 expect_resultContains 'shoots'

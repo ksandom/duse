@@ -3,7 +3,6 @@
 
 . "$SHEST_SCRIPT" "--doNothing"
 
-result="$(./misc/createDuseTestData)"
-exitCode="$?"
+./misc/createDuseTestData ## Test this.
 
 expect_exitCode 0 

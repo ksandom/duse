@@ -8,12 +8,10 @@ workspaceHomes="$HOME/projects/example/shoots $HOME/projects/example/extra"
 
 cd projects/example
 
-result="$($HOME/bin/duse --createWorkspace shoots extra)"
-exitCode=$?
+$HOME/bin/duse --createWorkspace shoots extra ## Test this.
 expect_exitCode 0 "--createWorkspace extra"
 
-result="$($HOME/bin/duse --createWorkspace shoots shoots 2>&1)"
-exitCode=$?
+$HOME/bin/duse --createWorkspace shoots shoots ## Test this.
 expect_exitCode 0 "--createWorkspace shoots"
 
 for workspaceHome in $workspaceHomes; do

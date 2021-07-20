@@ -7,8 +7,7 @@ expectedDuseHome="$HOME/.config/duse"
 workspaceHome="$HOME/projects/example/extra"
 
 cd projects/example
-result="$($HOME/bin/duse --deleteWorkspace extra 2>&1)"
-exitCode=$?
+$HOME/bin/duse --deleteWorkspace extra ## Test this.
 
 expect_exitCode 0
 expect_not_exists "$workspaceHome/.duse/context"

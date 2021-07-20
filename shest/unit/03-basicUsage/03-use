@@ -7,16 +7,16 @@ expectedDuseHome="$HOME/.config/duse"
 workspaceHome="$HOME/projects/example/shoots"
 
 cd "$workspaceHome"
-result="$($HOME/bin/duse --use 001)"
-exitCode=$?
+$HOME/bin/duse --use 001 ## Test this.
 
 expect_exitCode 0
 expect_exists 001
 
-$HOME/bin/duse --use 001
+$HOME/bin/duse --use 001 ## Test this.
 expect_exitCode 0
 expect_exists 001
 expect_not_exists 001/001
 
-$HOME/bin/duse --use nonExistant
+$HOME/bin/duse --use nonExistant ## Test this.
 expect_not_exists nonExistant
+expect_exitCode 1

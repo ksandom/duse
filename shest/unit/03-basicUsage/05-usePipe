@@ -7,8 +7,7 @@ expectedDuseHome="$HOME/.config/duse"
 workspaceHome="$HOME/projects/example/shoots"
 
 cd "$workspaceHome"
-result="$($HOME/bin/duse --listAvailable | $HOME/bin/duse --use)"
-exitCode=$?
+$HOME/bin/duse --listAvailable | $HOME/bin/duse --use ## Test this.
 
 expect_exitCode 0
 expect_exists 001

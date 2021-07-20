@@ -9,22 +9,18 @@ workspaceHome="$HOME/projects/example/shoots"
 
 ## Let's re-create the workspace.
 cd "$HOME/projects/example"
-$HOME/bin/duse --createWorkspace shoots shoots
-exitCode=$?
+$HOME/bin/duse --createWorkspace shoots shoots ## Test this.
 expect_exitCode 0
 
 cd shoots
-$HOME/bin/duse --listAvailable | $HOME/bin/duse --use
-exitCode=$?
+$HOME/bin/duse --listAvailable | $HOME/bin/duse --use ## Test this.
 expect_exitCode 0
 
 # We're going to cache 001, 002, and 003, but not the rest.
-ls -1 | sort | head -n3 | $HOME/bin/duse --cache
-exitCode=$?
+ls -1 | sort | head -n3 | $HOME/bin/duse --cache ## Test this.
 expect_exitCode 0
 
-result="$($HOME/bin/duse --list)"
-exitCode=$?
+$HOME/bin/duse --list ## Test this.
 expect_exitCode 0
 
 # Make sure we cached the right stuff.
@@ -33,7 +29,8 @@ expect_resultContains "00[456].*Uncached"
 
 # Now let's test that --deleteContext cleans up workspaces and their associated things.
 cd ..
-$HOME/bin/duse --deleteContext shoots
+$HOME/bin/duse --deleteContext shoots ## Test this.
+expect_exitCode 0
 
 expect_not_exists "$HOME/cache/shoots/001"
 expect_not_exists "$HOME/cache/shoots/002"

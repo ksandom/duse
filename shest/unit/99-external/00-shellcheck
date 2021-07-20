@@ -4,11 +4,11 @@
 . "$SHEST_SCRIPT" "--doNothing"
 
 if which shellcheck > /dev/null; then
-  result="$(shellcheck bin/duse)"
-  exitCode=$?
+  shellcheck bin/duse ## Test this.
 
   expect_exitCode 0
   expect_resultLines 1
+  expect_errorLines 0
 else
   warn "Shellcheck does not appear to be installed."
 fi

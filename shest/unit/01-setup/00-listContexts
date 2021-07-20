@@ -5,8 +5,7 @@
 
 expectedDuseHome="$HOME/.config/duse"
 
-result="$(./bin/duse --listContexts 2>&1)"
-exitCode=$?
+./bin/duse --listContexts ## Test this.
 
 expect_exitCode 1
-expect_resultContains "No contexts yet."
+expect_errorContains "No contexts yet."

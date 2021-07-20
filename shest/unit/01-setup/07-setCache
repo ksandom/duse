@@ -5,8 +5,7 @@
 
 expectedDuseHome="$HOME/.config/duse"
 
-result="$(./bin/duse --setCache shoots cache)"
-exitCode=$?
+./bin/duse --setCache shoots cache ## Test this.
 expect_exitCode 0
 
 expect_exists "$expectedDuseHome/contexts/shoots/cache/location"

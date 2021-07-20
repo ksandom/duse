@@ -5,8 +5,7 @@
 
 expectedDuseHome="$HOME/.config/duse"
 
-result="$(./bin/duse --listContexts)"
-exitCode=$?
+./bin/duse --listContexts ## Test this.
 
 expect_exitCode 0
 expect_resultContains "shoots: A collection of photo/video shoots."

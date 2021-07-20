@@ -8,8 +8,7 @@ workspaceHome="$HOME/projects/example/shoots"
 workspaceName="$(echo "$workspaceHome" | sed "s#\(/\| \)#_#g")"
 
 cd "$workspaceHome"
-result="$($HOME/bin/duse --cache 001)"
-exitCode=$?
+$HOME/bin/duse --cache 001 ## Test this.
 
 expect_exitCode 0
 expect_exists "$HOME/cache/shoots/001"

@@ -3,8 +3,7 @@
 
 . "$SHEST_SCRIPT" "--doNothing"
 
-result="$(./bin/duse --help)"
-exitCode=$?
+./bin/duse --help ## Test this.
 
 expect_exitCode 0
 expect_resultContains "Show this help."

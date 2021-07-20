@@ -7,14 +7,12 @@ expectedDuseHome="$HOME/.config/duse"
 projectHome="$HOME/projects/example"
 
 cd "$projectHome"
-result="$($HOME/bin/duse --cache)"
-exitCode=$?
+$HOME/bin/duse --cache ## Test this.
 expect_exitCode 0 "--cache"
 
 for dirName in shoots{1,2}; do
   cd "$dirName"
-  result="$($HOME/bin/duse --list)"
-  exitCode=$?
+  $HOME/bin/duse --list ## Test this.
   expect_exitCode 0 "--list in $dirName."
   
   expect_resultContains "Cached" "Check that all items are cached in $dirName."

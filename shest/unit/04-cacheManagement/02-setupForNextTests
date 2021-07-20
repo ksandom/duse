@@ -7,27 +7,21 @@ expectedDuseHome="$HOME/.config/duse"
 workspaceHome="$HOME/projects/example/shoots"
 
 cd "$HOME/projects/example"
-result="$($HOME/bin/duse --createWorkspace shoots duplicate)"
-exitCode=$?
+$HOME/bin/duse --createWorkspace shoots duplicate ## Test this.
 expect_exitCode 0
 
 cd duplicate
-result="$($HOME/bin/duse --use 001)"
-exitCode=$?
+$HOME/bin/duse --use 001 ## Test this.
 expect_exitCode 0
 
-result="$($HOME/bin/duse --cache 001)"
-exitCode=$?
+$HOME/bin/duse --cache 001 ## Test this.
 expect_exitCode 0
 
-result="$($HOME/bin/duse --list)"
-exitCode=$?
+$HOME/bin/duse --list ## Test this.
 expect_exitCode 0
-
 expect_resultContains ^001.*Cached
 
-result="$(ls -1 "$HOME/cache/shoots/001/.duse/usage" | wc -l)"
-exitCode=$?
+ls -1 "$HOME/cache/shoots/001/.duse/usage" | wc -l ## Test this.
 expect_exitCode 0
 expect_value "$result" "2"
 

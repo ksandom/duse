@@ -5,12 +5,12 @@
 
 expectedDuseHome="$HOME/.config/duse"
 
-result="$(./bin/duse --deleteSource shoots primaryShoots)"
-exitCode=$?
+./bin/duse --deleteSource shoots primaryShoots ## Test this.
 
 expect_exitCode 0
 expect_not_exists "$expectedDuseHome/contexts/shoots/sources/primaryShoots"
 expect_exists "$expectedDuseHome/contexts/shoots/sources/archiveShoots"
 
 # Re-add it so that we have it for future tests.
-./bin/duse --addSource shoots source/source2 primaryShoots
+./bin/duse --addSource shoots source/source2 primaryShoots ## Test this.
+expect_exitCode 0

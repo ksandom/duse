@@ -6,38 +6,30 @@
 expectedDuseHome="$HOME/.config/duse"
 projectHome="$HOME/projects/example"
 
-result="$(./bin/duse --addContext shoots "A collection of photo/video shoots.")"
-exitCode=$?
+./bin/duse --addContext shoots "A collection of photo/video shoots." ## Test this.
 expect_exitCode 0 "--addContext"
 
-result="$(./bin/duse --addSource shoots source/source1 archiveShoots 2>&1)"
-exitCode=$?
+./bin/duse --addSource shoots source/source1 archiveShoots  ## Test this.
 expect_exitCode 0 "--addSource archiveShoots"
 
-result="$(./bin/duse --addSource shoots source/source2 primaryShoots 2>&1)"
-exitCode=$?
+./bin/duse --addSource shoots source/source2 primaryShoots ## Test this.
 expect_exitCode 0 "--addSource primaryShoots"
 
-result="$(./bin/duse --setCache shoots cache)"
-exitCode=$?
+./bin/duse --setCache shoots cache ## Test this.
 expect_exitCode 0 "--setCache"
 
 cd "$projectHome"
-result="$($HOME/bin/duse --createWorkspace shoots shoots1 2>&1)"
-exitCode=$?
+$HOME/bin/duse --createWorkspace shoots shoots1 ## Test this.
 expect_exitCode 0 "--createWorkspace shoots1"
 
-result="$($HOME/bin/duse --createWorkspace shoots shoots2 2>&1)"
-exitCode=$?
+$HOME/bin/duse --createWorkspace shoots shoots2 ## Test this.
 expect_exitCode 0 "--createWorkspace shoots2"
 
 
 cd "$projectHome/shoots1"
-result="$($HOME/bin/duse --listAvailable | sort | head -n3 | $HOME/bin/duse --use)"
-exitCode=$?
+$HOME/bin/duse --listAvailable | sort | head -n3 | $HOME/bin/duse --use ## Test this.
 expect_exitCode 0 "Use some shoots in shoots1."
 
 cd "$projectHome/shoots2"
-result="$($HOME/bin/duse --listAvailable | sort | tail -n4 | $HOME/bin/duse --use)"
-exitCode=$?
+$HOME/bin/duse --listAvailable | sort | tail -n4 | $HOME/bin/duse --use ## Test this.
 expect_exitCode 0 "Use some shoots in shoots2 with one overlap (003)."

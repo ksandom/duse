@@ -5,8 +5,7 @@
 
 expectedDuseHome="$HOME/.config/duse"
 
-result="$(./bin/duse --deleteContext "nonExistant" 2>&1)"
-exitCode=$?
+./bin/duse --deleteContext "nonExistant" ## Test this.
 
 expect_exitCode 1
-expect_resultContains "not found."
+expect_errorContains "not found."

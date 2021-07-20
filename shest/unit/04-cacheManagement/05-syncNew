@@ -7,12 +7,10 @@ expectedDuseHome="$HOME/.config/duse"
 workspaceHome="$HOME/projects/example/shoots"
 
 cd "$HOME/projects/example/shoots"
-result="$($HOME/bin/duse --uncache 001)"
-exitCode=$?
+$HOME/bin/duse --uncache 001 ## Test this.
 expect_exitCode 0
 
-result="$($HOME/bin/duse --list)"
-exitCode=$?
+$HOME/bin/duse --list ## Test this.
 expect_exitCode 0
 expect_resultContains ^001.*Uncached
 
