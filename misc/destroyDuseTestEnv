@@ -6,7 +6,7 @@ set -ex
 
 mkdir -p /tmp/duseTestEnv
 
-duse --deleteContext shoots
+duse --deleteContext shootsExample
 
 # Destroy the data.
 rm -Rf /tmp/duseTestEnv
