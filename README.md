@@ -185,3 +185,15 @@ duse --sync
 
 * [shest](https://github.com/ksandom/shest) for unit testing.
 * [shellcheck](https://github.com/koalaman/shellcheck). for linting.
+
+## Install
+
+```bash
+make install
+```
+
+or
+
+```bash
+./misc/install.sh
+```
