@@ -437,6 +437,43 @@ function deleteWorkspace # Delete a workspace. --deleteWorkspace workspaceNameOr
   rm -Rvf "$workspaceNameOrPath"
 }
 
+function private_getContextNameFromDir
+{
+  local workspaceNameOrPath
+  local contextName
+  local type
+  
+  workspaceNameOrPath="${1:-.}"
+  
+  if [ ! -e "$workspaceNameOrPath/.duse" ] || [ ! -e "$workspaceNameOrPath/.duse/type" ]; then
+    echo "Could not find a valid workspace at \"$workspaceNameOrPath\"." >&2
+    return 1
+  fi
+  
+  type="$(cat "$workspaceNameOrPath/.duse/type")"
+  if [ "$type" != 'workspace' ]; then
+    echo "\"$workspaceNameOrPath\"($type) does not appear to be a workspace." >&2
+    return 1
+  fi
+  
+  contextName="$(cat "$workspaceNameOrPath/.duse/context")"
+  
+  echo "$contextName"
+}
+
+function privateGetContextPathFromCurrentDir
+{
+  local contextName
+  local contextPath
+  
+  if contextName="$(private_getContextNameFromDir)"; then
+    contextPath="$contextHome/$contextName"
+    echo "$contextPath"
+  else
+    return 1
+  fi
+}
+
 function info # Show basic information about the current workspace.
 {
   if [ ! -e '.duse/context' ]; then
@@ -498,20 +535,22 @@ function private_getEntryType
   fi
 }
 
-function private_entryInCache
-{
-  local context
-  local entry
-  
-  context="$1"
-  entry="$2"
-  
-  if [ -e "" ]; then
-    true
-  else
-    return 1
-  fi
-}
+# function private_entryInCache
+# {
+#   local context
+#   local entry
+#   
+#   context="$1"
+#   entry="$2"
+#   
+#   # TODO This isn't finished.
+#   # Currently unused.
+#   if [ -e "" ]; then
+#     true
+#   else
+#     return 1
+#   fi
+# }
 
 function private_entryInSource
 {
@@ -575,6 +614,7 @@ function list # List the items in the current workspace (current directory), and
         entryAccessible='Yes?'
         entryLocation='Not managed by duse.'
       fi
+      
       echo "$entry$separator$entryAccessible$separator$entryType$separator$entryLocation"
     done < <(ls -1)
   } | column -t -s '^'
@@ -885,6 +925,34 @@ function sync # Sync cache to make sure it is up-to-date. Also remove orphaned e
   done < <(private_getContexts)
 }
 
+function private_repair
+{
+  local thing="$1"
+  
+  if [ ! -e "$thing" ]; then
+    # Can not read link destination.
+    
+    type="$(private_getEntryType "$(private_getContextNameFromDir)" "$thing")"
+    
+    if derivedSource="$(private_getSourceForThing "$thing")"; then
+      echo "$thing ($type) in $(pwd) is no longer accessible. Pointing back to $derivedSource."
+      rm "$thing"
+      ln -s "$derivedSource" "$thing"
+      
+      return 2
+    else
+      echo "$thing ($type) in $(pwd) is no longer accessible. And it can't be found in the sources. Manual intervention will be required."
+      
+      return 1
+    fi
+  fi
+}
+
+function repair # Fix any symlinks that point to things that have moved to valid locations. Assumed to be run from a workspace, or the project directory containing workspaces.
+{
+  private_abstractDirection "private_repair" "$1"
+  return "$?"
+}
 
 
 ################################################################################
@@ -893,6 +961,7 @@ function private_abstractDirection_projectWide
 {
   local functionName
   local input
+  local returnValue=0
   
   functionName="$1"
   input="$2"
@@ -903,14 +972,16 @@ function private_abstractDirection_projectWide
       
       if cd "$potentialWorkspace"; then
         listAvailable| private_abstractDirection "$functionName" "$input"
+        returnValue="$?"
         
-        # This warning is disabled, because after extensive testing, it's simply wrong
         cd ..
       fi
     else
       echo "Skipping \"$potentialWorkspace\"."
     fi
   done < <(ls -1)
+  
+  return "$returnValue"
 }
 
 function private_abstractDirection
@@ -932,19 +1003,30 @@ function private_abstractDirection
         return 1
       else
         private_abstractDirection_projectWide "$functionName" "$input"
+        return "$?"
       fi
     ;;
     "workspace")
       if [ "$input" != '' ]; then
         "$functionName" "$input"
+        return "$?"
       else
         if private_stdinIsTerminal; then
           # shellcheck disable=SC2012
           ls -1 | private_abstractDirection "$functionName" "$input"
+          return "$?"
         else
+          returnValue=0
           while read -r entry; do
             "$functionName" "$entry"
+            tmpReturnValue="$?"
+            
+            if [ "$tmpReturnValue" != 0 ]; then
+              returnValue="$tmpReturnValue"
+            fi
           done
+          
+          return "$returnValue"
         fi
       fi
     ;;
@@ -1029,7 +1111,8 @@ else
   if command="$(private_getCommandFromArg "$1")"; then
     shift
     "$command" "$@"
-    exit "$?"
+    returnValue="$?"
+   exit "$returnValue"
   else
     echo "$0: Command not found." >&2
     exit 1
