@@ -957,6 +957,30 @@ function repair # Fix any symlinks that point to things that have moved to valid
 
 ################################################################################
 
+function private_returnMostSerious
+{
+  local currentValue="$1"
+  local newValue="$2"
+  
+  # This looks a little conveluted, but it's pretty simple. The premise is that 0 is success, 1 is the worst error you can have. And the larger the number, the less fatal it is. This assumption may not hold up across different tools, but it's easy to adhere to internally.
+  
+  if [ "$currentValue"  == '1' ]; then
+    echo 1
+  elif [ "$newValue" -gt 0 ]; then
+    if [ "$currentValue" -gt 0 ]; then
+      if [ "$newValue" -lt "$currentValue" ]; then
+        echo "$newValue"
+      else
+        echo "$currentValue"
+      fi
+    else
+      echo "$newValue"
+    fi
+  else
+    echo "$currentValue"
+  fi
+}
+
 function private_abstractDirection_projectWide
 {
   local functionName
@@ -972,8 +996,8 @@ function private_abstractDirection_projectWide
       
       if cd "$potentialWorkspace"; then
         listAvailable| private_abstractDirection "$functionName" "$input"
-        returnValue="$?"
         
+        returnValue="$(private_returnMostSerious "$returnValue" "$?")"
         cd ..
       fi
     else
@@ -1019,11 +1043,8 @@ function private_abstractDirection
           returnValue=0
           while read -r entry; do
             "$functionName" "$entry"
-            tmpReturnValue="$?"
             
-            if [ "$tmpReturnValue" != 0 ]; then
-              returnValue="$tmpReturnValue"
-            fi
+            returnValue="$(private_returnMostSerious "$returnValue" "$?")"
           done
           
           return "$returnValue"
