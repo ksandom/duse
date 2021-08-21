@@ -30,7 +30,7 @@ expect_exitCode 2 "Moved workspace."
 $HOME/bin/duse --repair ## Test this.
 expect_exitCode 0 "There should be nothing left to repair."
 
-rm source/source2/005 ## Test this.
+rm -Rf source/source2/005 ## Test this.
 expect_exitCode 0 "Remove at the source while it is still in use."
 
 $HOME/bin/duse --repair ## Test this.

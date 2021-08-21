@@ -313,6 +313,28 @@ function private_getCache
   cat "$contextPath/cache/location"
 }
 
+function private_doRegisterWorkspace
+{
+  local contextPath="$1"
+  local workspacePath="$2"
+  local workspaceNiceName="$3"
+  
+  mkdir -p "$contextPath/workspaces"
+  echo "$workspacePath" > "$contextPath/workspaces/$workspaceNiceName"
+}
+
+function private_doUnregisterWorkspace
+{
+  local contextPath="$1"
+  local workspaceNiceName="$2"
+  
+  rm -fv "$contextPath/workspaces/$workspaceNiceName" | private_indent
+  # shellcheck disable=SC2012
+  if [ "$(ls -1 "$contextPath/workspaces" | wc -l)" -lt 1 ]; then
+    rmdir -v "$contextPath/workspaces" | private_indent
+  fi
+}
+
 function private_registerWorkspace
 {
   local contextName
@@ -332,16 +354,11 @@ function private_registerWorkspace
   case "$action" in
     "register")
       echo "Registering $workspaceName in $contextName..."
-      mkdir -p "$contextPath/workspaces"
-      echo "$workspacePath" > "$contextPath/workspaces/$workspaceNiceName"
+      private_doRegisterWorkspace "$contextPath" "$workspacePath" "$workspaceNiceName"
     ;;
     "unregister")
       echo "Unregistering $workspacePath from $contextName..."
-      rm -fv "$contextPath/workspaces/$workspaceNiceName" | indent
-      # shellcheck disable=SC2012
-      if [ "$(ls -1 "$contextPath/workspaces" | wc -l)" -lt 1 ]; then
-        rmdir -v "$contextPath/workspaces" | indent
-      fi
+      private_doUnregisterWorkspace "$contextPath" "$workspaceNiceName"
     ;;
   esac
 }
@@ -388,6 +405,9 @@ function createWorkspace # 03: Create a workspace that will use the context that
   
   mkdir -p "$workspaceName/.duse"
   echo "$contextName" > "$workspaceName/.duse/context"
+  echo "$workspaceName" > "$workspaceName/.duse/name"
+  echo "$(pwd)/$workspaceName" > "$workspaceName/.duse/registeredFullPath"
+  
   private_gentleSetType "$workspaceName" "workspace"
   private_gentleSetType "$workspaceName/.." "project"
   
@@ -948,10 +968,72 @@ function private_repair
   fi
 }
 
+function private_repairWorkspace
+{
+  local workspaceName="$1"
+  local currentFullPath
+  local registeredFullPath
+  local contextName
+  local returnValue=0
+  
+  currentFullPath="$(pwd)/$workspaceName"
+  registeredFullPath="$(cat "$workspaceName/.duse/registeredFullPath")"
+  
+  if [ "$currentFullPath" == "$registeredFullPath" ]; then
+    echo "Healthy."
+  else
+    echo "Has moved. Re-registering."
+    contextName="$(cat "$workspaceName/.duse/context")"
+    contextPath="$contextHome/$contextName"
+    workspacePath="$(pwd)/$workspaceName"
+    workspaceNiceName=$(private_sourceName "$workspacePath")
+    
+    echo -e "old: $registeredFullPath\nnew: $currentFullPath" | private_indent
+    
+    if [ ! -e "$registeredFullPath" ]; then
+      echo "This location does not appear to be a duplicate, un-registering the original."
+      private_doUnregisterWorkspace "$contextPath" "$workspaceNiceName"
+    else
+      echo "This location is a duplicate of the original ($registeredFullPath), so will not un-register it."
+    fi
+    
+    private_doRegisterWorkspace "$contextPath" "$workspacePath" "$workspaceNiceName"
+    
+    echo "Updating details."
+    echo "$currentFullPath" > "$workspaceName/.duse/registeredFullPath"
+    echo "$workspace" > "$workspaceName/.duse/name"
+    
+    returnValue=2
+  fi
+  
+  return "$returnValue"
+}
+
 function repair # Fix any symlinks that point to things that have moved to valid locations. Assumed to be run from a workspace, or the project directory containing workspaces.
 {
+  local returnValue=0
+  local type
+  
   private_abstractDirection "private_repair" "$1"
-  return "$?"
+  returnValue="$(private_returnMostSerious "$returnValue" "$?")"
+  
+  type="$(private_getType .)"
+  
+  if [ "$type" == "project" ]; then
+    while read -r potentialWorkspace; do
+      if [ "$(private_getType "$(pwd)/$potentialWorkspace")" == 'workspace' ]; then
+        echo "Checking workspace $potentialWorkspace..."
+        private_repairWorkspace "$potentialWorkspace"
+        returnValue="$(private_returnMostSerious "$returnValue" "$?")"
+      else
+        echo "Skipping \"$potentialWorkspace\"."
+      fi
+    done < <(ls -1)
+  else
+    echo "The current directory($type) is not a project. So will not check workspaces that may have been removed."
+  fi
+  
+  return "$returnValue"
 }
 
 
