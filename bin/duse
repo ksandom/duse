@@ -318,9 +318,11 @@ function private_doRegisterWorkspace
   local contextPath="$1"
   local workspacePath="$2"
   local workspaceNiceName="$3"
+  local descriptorPath="$contextPath/workspaces/$workspaceNiceName"
   
   mkdir -p "$contextPath/workspaces"
-  echo "$workspacePath" > "$contextPath/workspaces/$workspaceNiceName"
+  echo "$workspacePath" > "$descriptorPath"
+  echo "$descriptorPath" > "$workspacePath/.duse/descriptorPath"
 }
 
 function private_doUnregisterWorkspace
@@ -945,8 +947,10 @@ function sync # Sync cache to make sure it is up-to-date. Also remove orphaned e
   done < <(private_getContexts)
 }
 
-function private_repair
+function private_repairWorkspaceEntries
 {
+  # Repairs entries within a workspace.
+  
   local thing="$1"
   
   if [ ! -e "$thing" ]; then
@@ -954,8 +958,9 @@ function private_repair
     
     type="$(private_getEntryType "$(private_getContextNameFromDir)" "$thing")"
     
-    if derivedSource="$(private_getSourceForThing "$thing")"; then
-      echo "$thing ($type) in $(pwd) is no longer accessible. Pointing back to $derivedSource."
+    derivedSource="$(private_getSourceForThing "$thing")"
+    if [ "$derivedSource" != '' ]; then
+      echo "$thing ($type) in $(pwd) is no longer accessible. Pointing back to $derivedSource. ($?)"
       rm "$thing"
       ln -s "$derivedSource" "$thing"
       
@@ -970,14 +975,18 @@ function private_repair
 
 function private_repairWorkspace
 {
+  # Repairs a workspace.
+  
   local workspaceName="$1"
   local currentFullPath
   local registeredFullPath
   local contextName
   local returnValue=0
+  local descriptorPath
   
   currentFullPath="$(pwd)/$workspaceName"
   registeredFullPath="$(cat "$workspaceName/.duse/registeredFullPath")"
+  descriptorPath="$(cat "$workspaceName/.duse/descriptorPath")"
   
   if [ "$currentFullPath" == "$registeredFullPath" ]; then
     echo "Healthy."
@@ -993,6 +1002,12 @@ function private_repairWorkspace
     if [ ! -e "$registeredFullPath" ]; then
       echo "This location does not appear to be a duplicate, un-registering the original."
       private_doUnregisterWorkspace "$contextPath" "$workspaceNiceName"
+      
+      if [ "$descriptorPath" != '' ]; then
+        rm -f "$descriptorPath"
+      else
+        echo "This appears to be a really old workspace, so the registration can't be completely cleaned up. The only consequence of this is that duse will still think that it exists in the original location as well as the old one. If your workspace was created after 2021-08-23 with an up-to-date version of duse, then this is a bug that should be reported at https://github.com/ksandom/duse/issues ." >&2
+      fi
     else
       echo "This location is a duplicate of the original ($registeredFullPath), so will not un-register it."
     fi
@@ -1014,10 +1029,12 @@ function repair # Fix any symlinks that point to things that have moved to valid
   local returnValue=0
   local type
   
-  private_abstractDirection "private_repair" "$1"
+  private_abstractDirection "private_repairWorkspaceEntries" "$1"
   returnValue="$(private_returnMostSerious "$returnValue" "$?")"
   
   type="$(private_getType .)"
+  
+  echo "Begin health check of $(pwd) of type $type."
   
   if [ "$type" == "project" ]; then
     while read -r potentialWorkspace; do
@@ -1077,7 +1094,8 @@ function private_abstractDirection_projectWide
       echo "Entering workspace $potentialWorkspace..."
       
       if cd "$potentialWorkspace"; then
-        listAvailable| private_abstractDirection "$functionName" "$input"
+        # shellcheck disable=SC2012
+        ls -1 | private_abstractDirection "$functionName" "$input"
         
         returnValue="$(private_returnMostSerious "$returnValue" "$?")"
         cd ..

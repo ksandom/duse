@@ -3,7 +3,7 @@
 
 set -x
 
-export PATH="$PATH:`pwd`/bin"
+export PATH="`pwd`/bin:$PATH"
 export PS1="\$? $PS1"
 
 set +x

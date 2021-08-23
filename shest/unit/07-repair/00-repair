@@ -1,0 +1,84 @@
+#!/bin/bash
+# Test --repair with user-created problems.
+
+. "$SHEST_SCRIPT" "--doNothing"
+
+projectHome="$HOME/projects/example"
+
+
+cd "$projectHome"
+$HOME/bin/duse --uncache ## Test this.
+expect_exitCode 0 "Assert that nothing is cached for this test."
+
+expect_exists "$projectHome/shoots1/003" "Pre-breakage check."
+expect_exists "$projectHome/shoots2/003" "Pre-breakage check."
+expect_exists "$projectHome/shoots2/004" "Pre-breakage check."
+
+cd "$HOME"
+mv source/source2/004 source/source1 ## Test this.
+expect_exitCode 0 "mv 1/004 - Move an item from one source to another."
+
+mv source/source1/003 source/source2 ## Test this.
+expect_exitCode 0 "mv 1/003 - Move an item from one source to another."
+
+expect_not_exists "$projectHome/shoots1/003" "Should be broken."
+expect_not_exists "$projectHome/shoots2/003" "Should be broken."
+expect_not_exists "$projectHome/shoots2/004" "Should be broken."
+
+cd "$projectHome/shoots1"
+
+$HOME/bin/duse --repair ## Test this.
+expect_exitCode 2 "Should warn (but not fail) that something was repaired."
+expect_exists "$projectHome/shoots1/003" "shoots1/003 should be fixed."
+
+cd ..
+$HOME/bin/duse --repair ## Test this.
+expect_exitCode 2 "Same as above, but globally."
+expect_exists "$projectHome/shoots2/004" "shoots2/004 should be fixed."
+expect_exists "$projectHome/shoots2/004" "shoots2/003 should be fixed."
+
+$HOME/bin/duse --repair ## Test this.
+expect_exitCode 0 "There should be nothing left to repair."
+
+$HOME/bin/duse --listContexts ## Test this.
+expect_resultContains "$projectHome/shoots1" "Pre-move check."
+expect_resultContains "$projectHome/shoots2" "Pre-move check."
+expect_not_resultContains "$projectHome/shootsb" "Pre-move check."
+
+mv shoots2 shootsb ## Test this.
+expect_exitCode 0 "mv 2 - Move a workspace."
+
+$HOME/bin/duse --repair ## Test this.
+expect_exitCode 2 "Moved workspace."
+
+$HOME/bin/duse --listContexts ## Test this.
+expect_resultContains "$projectHome/shoots1" "Should still be fine."
+expect_not_resultContains "$projectHome/shoots2" "Should have moved."
+expect_resultContains "$projectHome/shootsb" "Should have moved."
+
+$HOME/bin/duse --repair ## Test this.
+expect_exitCode 0 "There should be nothing left to repair."
+
+cp -R shoots1 shootsa ## Test this.
+expect_exitCode 0 "Make a duplicate workspace."
+
+$HOME/bin/duse --repair ## Test this.
+expect_exitCode 2 "Duplicate workspace should get registered."
+
+$HOME/bin/duse --listContexts ## Test this.
+expect_resultContains "$projectHome/shoots1" "Original should still be fine."
+expect_resultContains "$projectHome/shootsa" "Duplicate should now be unique."
+expect_not_resultContains "$projectHome/shoots2" "Should not exist."
+expect_resultContains "$projectHome/shootsb" "Should exist."
+
+$HOME/bin/duse --repair ## Test this.
+expect_exitCode 0 "Duplicate workspace should now be unique."
+
+rm -Rv $HOME/source/source2/005 ## Test this.
+expect_exitCode 0 "Remove at the source while it is still in use."
+
+$HOME/bin/duse --repair ## Test this.
+expect_exitCode 1 "Manual intervention is required." # for absent source.
+
+$HOME/bin/duse --repair ## Test this.
+expect_exitCode 1 "Manual intervention is required." # We should get the same result each time because nothing should be done.
