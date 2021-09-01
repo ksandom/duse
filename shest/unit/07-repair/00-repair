@@ -82,3 +82,9 @@ expect_exitCode 1 "Manual intervention is required." # for absent source.
 
 $HOME/bin/duse --repair ## Test this.
 expect_exitCode 1 "Manual intervention is required." # We should get the same result each time because nothing should be done.
+
+rm "$projectHome/shootsb/005" ## Test this.
+expect_exitCode 0 "Manually remove the item."
+
+$HOME/bin/duse --repair ## Test this.
+expect_exitCode 0 "Clean after manual intervention."
