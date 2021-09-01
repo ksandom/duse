@@ -423,7 +423,11 @@ function private_emptyWorkspace
   workspacePath="$1"
   
   if cd "$workspacePath"; then
-    find . -maxdepth 1 | unuse
+    # TODO Revisit this to see if SC2012 can be honoured and still function correctly. Solution should not:
+    # * include hidden files.
+    # * include ./ in front of filenames.
+    # shellcheck disable=SC2012 # Suggested alternative either massively complicates things, or produces incorrect output.
+    ls -1 | unuse
     cd  ..
   else
     echo "private_emptyWorkspace: Could not find $workspacePath ." >&2
@@ -702,7 +706,7 @@ function private_getSourceForThing
     echo "There don't appear to be any sources for this item. Typo?" >&2
     return 1
   elif [ "$numberOfSources" -gt 1 ]; then
-    echo "There appear to be multiple sources for this item:" >&2
+    echo "There appear to be multiple sources for \"$thing\" in \"$(pwd)\":" >&2
     # shellcheck disable=SC2001
     echo "$sources" | sed 's/^/  /g' >&2
     echo -e "\nWill assume the first. But you should definitely fix this. You don't have a single source of truth." >&2
@@ -855,13 +859,13 @@ function private_removeFromCache
   thingDir="$cacheDir/$contextName/$thing"
   
   if [ ! -e "$thingDir" ]; then
-    echo "private_removeFromCache: cache for $thing does not exist. Will not clean." >&2
+    echo "private_removeFromCache: cache for $thing does not exist. No need to clean." >&2
   fi
   
   if [ "$cacheUsage" -eq 0 ]; then
     rm -Rf "$thingDir"
   else
-    echo "private_removeFromCache: cache for $thing is not unused. Will not clean." >&2
+    echo "private_removeFromCache: cache for $thing is not unused. No need to clean." >&2
     return 1
   fi
 }
@@ -876,19 +880,30 @@ function private_doUncacheViaParameter
   local originalSource
   local derivedSource
   local cacheUsage
+  local thingDirSource
   
   thing="$1"
   contextName="$(cat '.duse/context')"
   workspaceName="$(private_sourceName "$(pwd)")"
   cacheDir="$(private_getCache "$contextName")"
   thingDir="$cacheDir/$contextName/$thing"
-  originalSource="$(cat "$thingDir/.duse/source" 2>/dev/null)"
-  derivedSource="$(private_getSourceForThing "$thing")"
+  thingDirSource="$thingDir/.duse/source"
+  
+  if ! derivedSource="$(private_getSourceForThing "$thing")"; then
+    echo "We don't appear to have a source for \"$thing\". Review any previous error/warning messages." >&2
+    return 1
+  fi
+  
+  if [ -e "$thingDirSource" ]; then
+    originalSource="$(cat "$thingDirSource" 2>/dev/null)"
+  else
+    originalSource="$derivedSource"
+  fi
   
   echo "$(pwd)/$thing"
   
   if [ "$originalSource" != "$derivedSource" ]; then
-    echo "WARN: The source appears to have changed. Updating:
+    echo "WARN: The source appears tthis tho have changed. Updating:
     Was: $originalSource
     Now: $derivedSource" | private_indent >&2
   fi
@@ -1053,6 +1068,31 @@ function repair # Fix any symlinks that point to things that have moved to valid
   return "$returnValue"
 }
 
+function decommission # Decommission all workspaces within a project.
+{
+  local returnValue=0
+  local type
+  
+  type="$(private_getType .)"
+  
+  if [ "$type" == "project" ]; then
+    echo "Begin decommission of $(pwd) of type $type."
+    
+    while read -r potentialWorkspace; do
+      if [ "$(private_getType "$(pwd)/$potentialWorkspace")" == 'workspace' ]; then
+        echo "Unregistering and removing workspace $potentialWorkspace..."
+        deleteWorkspace "$potentialWorkspace"
+        returnValue="$(private_returnMostSerious "$returnValue" "$?")"
+      else
+        echo "Skipping \"$potentialWorkspace\"."
+      fi
+    done < <(ls -1)
+  else
+    echo "The current directory($type) is not a project. So will not check workspaces that may have been removed."
+  fi
+  
+  return "$returnValue"
+}
 
 ################################################################################
 

@@ -1,0 +1,17 @@
+#!/bin/bash
+# Test that we can cleanly decommission a project.
+
+. "$SHEST_SCRIPT" "--doNothing"
+
+projectHome="$HOME/projects/example"
+
+cd "$projectHome"
+expect_exists "shoots1"
+expect_exists "shootsa"
+expect_exists "shootsb"
+
+$HOME/bin/duse --decommission ## Test this.
+expect_exitCode 0 "Decommission the duse components of the project."
+expect_not_exists "shoots1"
+expect_not_exists "shootsa"
+expect_not_exists "shootsb"
