@@ -299,7 +299,7 @@ function setCache # 02: Set the location where you want cache to be stored. --se
   fi
   
   mkdir -p "$contextPath/cache"
-            echo "$cachePath" > "$contextPath/cache/location"
+  echo "$cachePath" > "$contextPath/cache/location"
 }
 
 function private_getCache
@@ -810,7 +810,7 @@ function private_syncDir
   source="$(cat "$cacheDir/.duse/source")"
   
   echo "Sync $cacheDir..."
-  rsync -ruv "$source/"* "$cacheDir" | private_indent
+  rsync -ruv --progress "$source/"* "$cacheDir" | private_indent
 }
 
 function cache # Switch an item( or piped items from --listAvailable) to using cache. --cache itemToCache
