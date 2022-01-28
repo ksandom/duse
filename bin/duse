@@ -810,7 +810,8 @@ function private_syncDir
   source="$(cat "$cacheDir/.duse/source")"
   
   echo "Sync $cacheDir..."
-  rsync -ruv --progress "$source/"* "$cacheDir" | private_indent
+  rsync -ruv --progress "$source/"* "$cacheDir"
+  echo
 }
 
 function cache # Switch an item( or piped items from --listAvailable) to using cache. --cache itemToCache
