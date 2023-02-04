@@ -18,7 +18,33 @@ if [ -e "$duseHome/overrides" ]; then
 fi
 
 
-duseLib="${DUSE_LIB:-lib}"
+function getDirOfExecuted
+{
+  # TODO This method of finding the path to the executable is known to be unreliable. Implement it better.
+  dirname "$0"
+}
+
+function findLib
+{
+  # TODO Detect more.
+  for libDir in "$DUSE_LIB" "$testLocation/lib" "lib" "$(getDirOfExecuted)" "$(getDirOfExecuted)/../lib"; do
+    goal="$libDir/bootstrap.sh"
+    if [ -e "$goal" ]; then
+      echo "$libDir"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+
+duseLib="$(findLib)"
+if [ "$duseLib" == '' ]; then
+  echo "Could not find the duse libraries." >&2
+  exit 1
+fi
+
 
 . $duseLib/bootstrap.sh
 
