@@ -39,7 +39,19 @@ function private_syncDir
   local source
 
   cacheDir="$1"
-  source="$(cat "$cacheDir/.duse/source")"
+  sourceDescriptor="$cacheDir/.duse/source"
+
+  if [ ! -e "$sourceDescriptor" ]; then
+    echo "Failed to look up the source for $cacheDir. Perhaps it no longer exists?" >&2
+    return 1
+  fi
+
+  source="$(cat "$sourceDescriptor")"
+
+  if [ "$source" == '' ]; then
+    echo "Source for $cacheDir appears to be empty. Perhaps it no longer existed in the past? I suggest doing duse --uncache $cacheDir , and then duse --use $cacheDir ." >&2
+    return 1
+  fi
 
   echo "Sync $cacheDir..."
   rsync -ruv --progress "$source/"* "$cacheDir"
@@ -122,7 +134,8 @@ function private_doUncacheViaParameter
   thingDir="$cacheDir/$contextName/$thing"
   thingDirSource="$thingDir/.duse/source"
 
-  if ! derivedSource="$(private_getSourceForThing "$thing")"; then
+  derivedSource="$(private_getSourceForThing "$thing")"
+  if [ "$derivedSource" == '' ] ; then
     echo "We don't appear to have a source for \"$thing\". Review any previous error/warning messages." >&2
     return 1
   fi
