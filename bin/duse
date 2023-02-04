@@ -27,7 +27,7 @@ function getDirOfExecuted
 function findLib
 {
   # TODO Detect more.
-  for libDir in "$DUSE_LIB" "$testLocation/lib" "lib" "$(getDirOfExecuted)" "$(getDirOfExecuted)/../lib"; do
+  for libDir in "$DUSE_LIB" "$testLocation/lib" "lib" "$(getDirOfExecuted)" "$(getDirOfExecuted)/../lib" "/usr/lib/duse"; do
     goal="$libDir/bootstrap.sh"
     if [ -e "$goal" ]; then
       echo "$libDir"
