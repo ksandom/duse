@@ -27,8 +27,7 @@ function private_doCacheViaParameter
   echo "$(pwd)/$thing" > "$thingDir/.duse/usage/$workspaceName"
   private_gentleSetType "$thingDir" "cacheEntry"
 
-  # TODO Remove indent to allow live progress to show.
-  private_syncDir "$thingDir" | private_indent
+  private_syncDir "$thingDir"
 
   echo "Set symlink... $thingDir" | private_indent
   rm "$thing"
