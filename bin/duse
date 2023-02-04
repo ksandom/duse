@@ -27,6 +27,8 @@ function getDirOfExecuted
 function findLib
 {
   # TODO Detect more.
+  # $testLocation comes from the environment, and will fail gracefully if it is not assigned.
+  # shellcheck disable=SC2154
   for libDir in "$DUSE_LIB" "$testLocation/lib" "lib" "$(getDirOfExecuted)" "$(getDirOfExecuted)/../lib" "/usr/lib/duse"; do
     goal="$libDir/bootstrap.sh"
     if [ -e "$goal" ]; then
@@ -46,7 +48,7 @@ if [ "$duseLib" == '' ]; then
 fi
 
 
-. $duseLib/bootstrap.sh
+. "$duseLib/bootstrap.sh"
 
 
 if [ "$1" == '' ]; then

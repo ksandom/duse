@@ -4,7 +4,8 @@
 . "$SHEST_SCRIPT" "--doNothing"
 
 if which shellcheck > /dev/null; then
-  shellcheck bin/duse ## Test this.
+  cd lib
+  shellcheck ../bin/duse -x ## Test this.
 
   expect_exitCode 0
   expect_resultLines 1
