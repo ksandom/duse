@@ -149,7 +149,7 @@ function private_doUncacheViaParameter
   echo "$(pwd)/$thing"
 
   if [ "$originalSource" != "$derivedSource" ]; then
-    echo "WARN: The source appears tthis tho have changed. Updating:
+    echo "WARN: The source appears to have changed. Updating:
     Was: $originalSource
     Now: $derivedSource" | private_indent >&2
   fi
@@ -173,6 +173,12 @@ function private_doUncacheViaParameter
 function uncache # Switch an item( or piped items from --listAvailable) back to using cache. --uncache itemToUncache
 {
   private_abstractDirection "private_doUncacheViaParameter" "$1"
+  return "$?"
+}
+
+function cacheBack # Take changes made to the cache, and sync them back to the source. This should be a rare task in your workflow, and is intended for when you make a mistake. --cacheBack itemToSyncBack
+{
+  private_abstractDirection "private_cacheBackViaParameter" "$1"
   return "$?"
 }
 

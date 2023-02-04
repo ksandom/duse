@@ -1,0 +1,33 @@
+#!/bin/bash
+# Test --cacheBack .
+
+. "$SHEST_SCRIPT" "--doNothing"
+
+expectedDuseHome="$HOME/.config/duse"
+workspaceHome="$HOME/projects/example/shoots"
+workspaceName="$(echo "$workspaceHome" | sed "s#\(/\| \)#_#g")"
+
+cd "$workspaceHome"
+$HOME/bin/duse --cache 001 ## Test this.
+
+expect_exitCode 0
+expect_exists "$HOME/cache/shoots/001/a"
+expect_exists "$HOME/source/source1/001/a"
+expect_not_exists "$HOME/cache/shoots/001/z"
+expect_not_exists "$HOME/source/source1/001/z"
+
+echo "trifel" > "$HOME/cache/shoots/001/z"
+
+expect_exists "$HOME/cache/shoots/001/z"
+expect_not_exists "$HOME/source/source1/001/z"
+
+$HOME/bin/duse --cacheBack 001 ## Test this.
+
+expect_exitCode 0
+expect_exists "$HOME/cache/shoots/001/z"
+expect_exists "$HOME/source/source1/001/z"
+
+cat "$HOME/source/source1/001/z" ## Test this.
+
+expect_exitCode 0
+expect_resultContains "trifel"
