@@ -1,4 +1,4 @@
 #!/bin/bash
 # Uninstall Duse.
 
-rm /usr/bin/duse
+rm -Rfv /usr/bin/duse /usr/lib/duse
