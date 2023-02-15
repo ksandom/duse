@@ -54,7 +54,7 @@ function private_syncDir
   fi
 
   echo "Sync $cacheDir..."
-  rsync -ruv --progress "$source/"* "$cacheDir"
+  rsync -rulv --progress "$source/"* "$cacheDir"
   echo
 }
 

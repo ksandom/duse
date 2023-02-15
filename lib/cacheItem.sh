@@ -66,5 +66,5 @@ function private_cacheBackViaParameter
   fi
 
   echo "cacheBack $thing"
-  rsync -ruv --progress --exclude="\.duse" "$cacheDir/$contextName/$thing/"* "$source"
+  rsync -rulv --progress --exclude="\.duse" "$cacheDir/$contextName/$thing/"* "$source"
 }
